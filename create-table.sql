@@ -115,6 +115,5 @@ create table if not exists repair (
   WID int not null,
 
   primary key (CID, WID),
-  foreign key (CID) references car (CID),
-  foreign key (UID) references workshop (WID)
-)
+  foreign key (CID) references car (CID)
+);
