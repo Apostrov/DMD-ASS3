@@ -15,7 +15,16 @@ class CarSharingDataBase:
     conn = sqlite3.connect('Car_sharing_service.db')
     cursor = conn.cursor()
 
+    def open_db(self):
+        self.conn = sqlite3.connect('Car_sharing_service.db')
+        self.cursor = self.conn.cursor()
+
+    def close_db(self):
+        self.conn.commit()
+        self.conn.close()
+
     def __init__(self):
+        self.open_db()
         # Location table
         self.cursor.execute('''
         create table if not exists location (
@@ -36,7 +45,7 @@ class CarSharingDataBase:
           price varchar (50),
           time_of_charging int,
           GPS varchar (100) not null,
-
+          
           primary key (UID),
           foreign key (GPS) references location (GPS)
         );
@@ -116,7 +125,6 @@ class CarSharingDataBase:
           PID int not null,
           WID int not null,
 
-          primary key (PID, WID),
           foreign key (PID) references provider (PID),
           foreign key (WID) references workshop (WID)
         );
@@ -143,7 +151,6 @@ class CarSharingDataBase:
           coordinate_a varchar (100),
           coordinate_b varchar (100),
 
-          primary key (CID, username),
           foreign key (CID) references car (CID),
           foreign key (username) references customer (username)
         );
@@ -155,7 +162,6 @@ class CarSharingDataBase:
           CID int not null,
           UID int not null,
 
-          primary key (CID, UID),
           foreign key (CID) references car (CID),
           foreign key (UID) references charging_station (UID)
         );
@@ -167,16 +173,21 @@ class CarSharingDataBase:
           CID int not null,
           WID int not null,
 
-          primary key (CID, WID),
-          foreign key (CID) references car (CID)
+          foreign key (CID) references car (CID),
+          foreign key (WID) references workshop (WID)
         );
         ''')
 
         self.conn.commit()
 
+    # !!! Not secured from sql injection
     def select_table_column(self, table, column='*'):
-        self.cursor.execute("select ? from ?", (column, table))
+        self.cursor.execute('select %s from %s' % (column, table))
         return self.cursor.fetchall()
+
+    def execute_custom_query(self, query):
+        self.cursor.execute(query)
+        self.conn.commit()
 
     # Location
     def add_location(self, GPS, city, street, zip_code):
@@ -205,9 +216,8 @@ class CarSharingDataBase:
         UID = generate_random_int(20)
         available_sockets = generate_random_int(2)
         price = generate_random_string(3)
-        time_of_charging = generate_random_int(1)
-        GPS = random.choice(all_gps)
-
+        time_of_charging = generate_random_int(2)
+        GPS = random.choice(all_gps)[0]
         self.add_charging_station(UID, available_sockets, price, time_of_charging, GPS)
 
     # Plug
@@ -221,9 +231,9 @@ class CarSharingDataBase:
         if len(all_uid) < 1:
             return
 
-        UID = random.choice(all_uid)
         shape = generate_random_string(20)
         size = generate_random_int(2)
+        UID = random.choice(all_uid)[0]
 
         self.add_plug(UID, shape, size)
 
@@ -242,7 +252,7 @@ class CarSharingDataBase:
         fullname = generate_random_string(50)
         phone_number = generate_random_string(20)
         email = generate_random_string(60)
-        GPS = random.choice(all_gps)
+        GPS = random.choice(all_gps)[0]
 
         self.add_customer(username, fullname, phone_number, email, GPS)
 
@@ -259,7 +269,7 @@ class CarSharingDataBase:
 
         WID = generate_random_int(20)
         timing_availability = "00:00:" + generate_random_int(2)
-        GPS = random.choice(all_gps)
+        GPS = random.choice(all_gps)[0]
 
         self.add_workshop(WID, timing_availability, GPS)
 
@@ -269,41 +279,156 @@ class CarSharingDataBase:
         self.cursor.execute("insert into car_part values (?, ?, ?, ?, ?, ?)", vals)
         self.conn.commit()
 
+    def add_random_car_part(self):
+        all_wid = self.select_table_column("workshop", "WID")
+        if len(all_wid) < 1:
+            return
 
+        part_type = generate_random_string(40)
+        car_type = generate_random_string(40)
+        amount = generate_random_string(40)
+        specifications = generate_random_string(100)
+        id = generate_random_int(10)
+        WID = random.choice(all_wid)[0]
+
+        self.add_car_part(part_type, car_type, amount, specifications, id, WID)
+
+    # Provider
     def add_provider(self, phone_number, PID, GPS):
         vals = (phone_number, PID, GPS)
         self.cursor.execute("insert into provider values (?, ?, ?)", vals)
         self.conn.commit()
 
+    def add_random_provider(self):
+        all_gps = self.select_table_column("location", "GPS")
+        if len(all_gps) < 1:
+            return
+
+        phone_number = generate_random_string(20)
+        PID = generate_random_int(10)
+        GPS = random.choice(all_gps)[0]
+
+        self.add_provider(phone_number, PID, GPS)
+
+    # Provide car parts
     def add_provide_car_parts(self, part_type, car_part, amount, specifications, PID, WID):
         vals = (part_type, car_part, amount, specifications, PID, WID)
         self.cursor.execute("insert into provide_car_parts values (?, ?, ?, ?, ?, ?)", vals)
         self.conn.commit()
 
+    def add_random_provide_car_parts(self):
+        all_wid = self.select_table_column("workshop", "WID")
+        if len(all_wid) < 1:
+            return
+
+        all_pid = self.select_table_column("provider", "PID")
+        if len(all_pid) < 1:
+            return
+
+        part_type = generate_random_string(40)
+        car_type = generate_random_string(40)
+        amount = generate_random_string(40)
+        specifications = generate_random_string(100)
+        PID = random.choice(all_pid)[0]
+        WID = random.choice(all_wid)[0]
+
+        self.add_provide_car_parts(part_type, car_type, amount, specifications, PID, WID)
+
+    # Car
     def add_car(self, CID, type, broken, charge_amount, GPS):
         vals = (CID, type, broken, charge_amount, GPS)
         self.cursor.execute("insert into car values (?, ?, ?, ?, ?)", vals)
         self.conn.commit()
 
+    def add_random_car(self):
+        CID = generate_random_int(10)
+        type = generate_random_string(50)
+        broken = False
+        charge_amount = generate_random_int(2)
+        GPS = generate_random_string(50)
+
+        self.add_car(CID, type, broken, charge_amount, GPS)
+
+    # Ride
     def add_ride(self, CID, username, coordinate_a, coordinate_b):
         vals = (CID, username, coordinate_a, coordinate_b)
         self.cursor.execute("insert into ride values (?, ?, ?, ?)", vals)
         self.conn.commit()
 
+    def add_random_ride(self):
+        all_cid = self.select_table_column("car", "CID")
+        if len(all_cid) < 1:
+            return
+
+        all_username = self.select_table_column("customer", "username")
+        if len(all_username) < 1:
+            return
+
+        coordinate_a = generate_random_string(50)
+        coordinate_b = generate_random_string(50)
+        CID = random.choice(all_cid)[0]
+        username = random.choice(all_username)[0]
+
+        self.add_ride(CID, username, coordinate_a, coordinate_b)
+
+    # Charge
     def add_charge(self, CID, UID):
         vals = (CID, UID)
         self.cursor.execute("insert into charge values (?, ?)", vals)
         self.conn.commit()
 
+    def add_random_charge(self):
+        all_cid = self.select_table_column("car", "CID")
+        if len(all_cid) < 1:
+            return
+
+        all_uid = self.select_table_column("charging_station", "UID")
+        if len(all_uid) < 1:
+            return
+
+        CID = random.choice(all_cid)[0]
+        UID = random.choice(all_uid)[0]
+
+        self.add_charge(CID, UID)
+
+    # Repair
     def add_repair(self, CID, WID):
         vals = (CID, WID)
         self.cursor.execute("insert into repair values (?, ?)", vals)
         self.conn.commit()
 
+    def add_random_repair(self):
+        all_cid = self.select_table_column("car", "CID")
+        if len(all_cid) < 1:
+            return
+
+        all_wid = self.select_table_column("workshop", "WID")
+        if len(all_wid) < 1:
+            return
+
+        CID = random.choice(all_cid)[0]
+        WID = random.choice(all_wid)[0]
+
+        self.add_repair(CID, WID)
+
+    # Another func
     def add_random_data(self, amount):
         for i in range(amount):
-            pass
+            self.add_random_location()
+            self.add_random_charging_station()
+            self.add_random_plug()
+            self.add_random_customer()
+            self.add_random_workshop()
+            self.add_random_car_part()
+            self.add_random_provider()
+            self.add_random_provide_car_parts()
+            self.add_random_car()
+            self.add_random_ride()
+            self.add_random_charge()
+            self.add_random_repair()
 
 
 if __name__ == '__main__':
     db = CarSharingDataBase()
+    db.add_random_data(5)
+    db.close_db()

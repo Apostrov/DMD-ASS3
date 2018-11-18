@@ -75,7 +75,6 @@ create table if not exists provide_car_parts (
   PID int not null,
   WID int not null,
 
-  primary key (PID, WID),
   foreign key (PID) references provider (PID),
   foreign key (WID) references workshop (WID)
 );
@@ -96,7 +95,6 @@ create table if not exists ride (
   coordinate_a varchar (100),
   coordinate_b varchar (100),
 
-  primary key (CID, username),
   foreign key (CID) references car (CID),
   foreign key (username) references customer (username)
 );
@@ -105,7 +103,6 @@ create table if not exists charge (
   CID int not null,
   UID int not null,
 
-  primary key (CID, UID),
   foreign key (CID) references car (CID),
   foreign key (UID) references charging_station (UID)
 );
@@ -114,6 +111,6 @@ create table if not exists repair (
   CID int not null,
   WID int not null,
 
-  primary key (CID, WID),
-  foreign key (CID) references car (CID)
+  foreign key (CID) references car (CID),
+  foreign key (WID) references workshop (WID)
 );
