@@ -9,7 +9,7 @@ create table if not exists location (
 
 create table if not exists charging_station (
   UID int not null,
-  aviable_sockets int,
+  available_sockets int,
   price varchar (50),
   time_of_charging int,
   GPS varchar (100) not null,

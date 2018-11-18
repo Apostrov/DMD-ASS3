@@ -1,7 +1,17 @@
 import sqlite3
+import random
+import string
 
 
-class CarSharingDataBase():
+def generate_random_int(length):
+    return ''.join(random.choices(string.digits, k=length))
+
+
+def generate_random_string(length):
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+
+class CarSharingDataBase:
     conn = sqlite3.connect('Car_sharing_service.db')
     cursor = conn.cursor()
 
@@ -22,7 +32,7 @@ class CarSharingDataBase():
         self.cursor.execute('''
         create table if not exists charging_station (
           UID int not null,
-          aviable_sockets int,
+          available_sockets int,
           price varchar (50),
           time_of_charging int,
           GPS varchar (100) not null,
@@ -164,35 +174,101 @@ class CarSharingDataBase():
 
         self.conn.commit()
 
+    def select_table_column(self, table, column='*'):
+        self.cursor.execute("select ? from ?", (column, table))
+        return self.cursor.fetchall()
+
+    # Location
     def add_location(self, GPS, city, street, zip_code):
         vals = (GPS, city, street, zip_code)
         self.cursor.execute("insert into location values (?, ?, ?, ?)", vals)
         self.conn.commit()
 
-    def add_charging_station(self, UID, aviable_sockets, price, time_of_charging, GPS):
-        vals = (UID, aviable_sockets, price, time_of_charging, GPS)
+    def add_random_location(self):
+        GPS = generate_random_string(50)
+        city = generate_random_string(50)
+        street = generate_random_string(50)
+        zip_code = generate_random_int(20)
+        self.add_location(GPS, city, street, zip_code)
+
+    # Charging station
+    def add_charging_station(self, UID, available_sockets, price, time_of_charging, GPS):
+        vals = (UID, available_sockets, price, time_of_charging, GPS)
         self.cursor.execute("insert into charging_station values (?, ?, ?, ?, ?)", vals)
         self.conn.commit()
 
+    def add_random_charging_station(self):
+        all_gps = self.select_table_column("location", "GPS")
+        if len(all_gps) < 1:
+            return
+
+        UID = generate_random_int(20)
+        available_sockets = generate_random_int(2)
+        price = generate_random_string(3)
+        time_of_charging = generate_random_int(1)
+        GPS = random.choice(all_gps)
+
+        self.add_charging_station(UID, available_sockets, price, time_of_charging, GPS)
+
+    # Plug
     def add_plug(self, UID, shape, size):
         vals = (UID, shape, size)
         self.cursor.execute("insert into plug values (?, ?, ?)", vals)
         self.conn.commit()
 
+    def add_random_plug(self):
+        all_uid = self.select_table_column("charging_station", "UID")
+        if len(all_uid) < 1:
+            return
+
+        UID = random.choice(all_uid)
+        shape = generate_random_string(20)
+        size = generate_random_int(2)
+
+        self.add_plug(UID, shape, size)
+
+    # Customer
     def add_customer(self, username, fullname, phone_number, email, GPS):
         vals = (username, fullname, phone_number, email, GPS)
         self.cursor.execute("insert into customer values (?, ?, ?, ?, ?)", vals)
         self.conn.commit()
 
+    def add_random_customer(self):
+        all_gps = self.select_table_column("location", "GPS")
+        if len(all_gps) < 1:
+            return
+
+        username = generate_random_string(50)
+        fullname = generate_random_string(50)
+        phone_number = generate_random_string(20)
+        email = generate_random_string(60)
+        GPS = random.choice(all_gps)
+
+        self.add_customer(username, fullname, phone_number, email, GPS)
+
+    # Workshop
     def add_workshop(self, WID, timing_availability, GPS):
         vals = (WID, timing_availability, GPS)
         self.cursor.execute("insert into workshop values (?, ?, ?)", vals)
         self.conn.commit()
 
+    def add_random_workshop(self):
+        all_gps = self.select_table_column("location", "GPS")
+        if len(all_gps) < 1:
+            return
+
+        WID = generate_random_int(20)
+        timing_availability = "00:00:" + generate_random_int(2)
+        GPS = random.choice(all_gps)
+
+        self.add_workshop(WID, timing_availability, GPS)
+
+    # Car part
     def add_car_part(self, part_type, car_part, amount, specifications, id, WID):
         vals = (part_type, car_part, amount, specifications, id, WID)
         self.cursor.execute("insert into car_part values (?, ?, ?, ?, ?, ?)", vals)
         self.conn.commit()
+
 
     def add_provider(self, phone_number, PID, GPS):
         vals = (phone_number, PID, GPS)
@@ -224,7 +300,10 @@ class CarSharingDataBase():
         self.cursor.execute("insert into repair values (?, ?)", vals)
         self.conn.commit()
 
+    def add_random_data(self, amount):
+        for i in range(amount):
+            pass
+
 
 if __name__ == '__main__':
     db = CarSharingDataBase()
-    db.add_location("123'456 e 2323'433", "Real City", "Leninskaya", "445223")
