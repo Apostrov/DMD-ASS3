@@ -162,12 +162,69 @@ class CarSharingDataBase():
         );
         ''')
 
-        self.commit_db()
-
-    def commit_db(self):
         self.conn.commit()
-        self.conn.close()
+
+    def add_location(self, GPS, city, street, zip_code):
+        vals = (GPS, city, street, zip_code)
+        self.cursor.execute("insert into location values (?, ?, ?, ?)", vals)
+        self.conn.commit()
+
+    def add_charging_station(self, UID, aviable_sockets, price, time_of_charging, GPS):
+        vals = (UID, aviable_sockets, price, time_of_charging, GPS)
+        self.cursor.execute("insert into charging_station values (?, ?, ?, ?, ?)", vals)
+        self.conn.commit()
+
+    def add_plug(self, UID, shape, size):
+        vals = (UID, shape, size)
+        self.cursor.execute("insert into plug values (?, ?, ?)", vals)
+        self.conn.commit()
+
+    def add_customer(self, username, fullname, phone_number, email, GPS):
+        vals = (username, fullname, phone_number, email, GPS)
+        self.cursor.execute("insert into customer values (?, ?, ?, ?, ?)", vals)
+        self.conn.commit()
+
+    def add_workshop(self, WID, timing_availability, GPS):
+        vals = (WID, timing_availability, GPS)
+        self.cursor.execute("insert into workshop values (?, ?, ?)", vals)
+        self.conn.commit()
+
+    def add_car_part(self, part_type, car_part, amount, specifications, id, WID):
+        vals = (part_type, car_part, amount, specifications, id, WID)
+        self.cursor.execute("insert into car_part values (?, ?, ?, ?, ?, ?)", vals)
+        self.conn.commit()
+
+    def add_provider(self, phone_number, PID, GPS):
+        vals = (phone_number, PID, GPS)
+        self.cursor.execute("insert into provider values (?, ?, ?)", vals)
+        self.conn.commit()
+
+    def add_provide_car_parts(self, part_type, car_part, amount, specifications, PID, WID):
+        vals = (part_type, car_part, amount, specifications, PID, WID)
+        self.cursor.execute("insert into provide_car_parts values (?, ?, ?, ?, ?, ?)", vals)
+        self.conn.commit()
+
+    def add_car(self, CID, type, broken, charge_amount, GPS):
+        vals = (CID, type, broken, charge_amount, GPS)
+        self.cursor.execute("insert into car values (?, ?, ?, ?, ?)", vals)
+        self.conn.commit()
+
+    def add_ride(self, CID, username, coordinate_a, coordinate_b):
+        vals = (CID, username, coordinate_a, coordinate_b)
+        self.cursor.execute("insert into ride values (?, ?, ?, ?)", vals)
+        self.conn.commit()
+
+    def add_charge(self, CID, UID):
+        vals = (CID, UID)
+        self.cursor.execute("insert into charge values (?, ?)", vals)
+        self.conn.commit()
+
+    def add_repair(self, CID, WID):
+        vals = (CID, WID)
+        self.cursor.execute("insert into repair values (?, ?)", vals)
+        self.conn.commit()
 
 
 if __name__ == '__main__':
     db = CarSharingDataBase()
+    db.add_location("123'456 e 2323'433", "Real City", "Leninskaya", "445223")
