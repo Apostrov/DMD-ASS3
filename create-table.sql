@@ -91,28 +91,29 @@ create table if not exists car (
 );
 
 create table if not exists ride (
-  CID int not null,
+  plate int not null,
   username varchar (50) not null,
   coordinate_a varchar (100),
   coordinate_b varchar (100),
+  ride_date date,
 
-  foreign key (CID) references car (CID),
+  foreign key (plate) references car (plate),
   foreign key (username) references customer (username)
 );
 
 create table if not exists charge (
-  CID int not null,
+  plate int not null,
   UID int not null,
   charged_datetime datetime,
 
-  foreign key (CID) references car (CID),
+  foreign key (plate) references car (plate),
   foreign key (UID) references charging_station (UID)
 );
 
 create table if not exists repair (
-  CID int not null,
+  plate int not null,
   WID int not null,
 
-  foreign key (CID) references car (CID),
+  foreign key (plate) references car (plate),
   foreign key (WID) references workshop (WID)
 );

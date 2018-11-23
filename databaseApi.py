@@ -207,9 +207,9 @@ class CarSharingDataBase:
         self.add_car(plate, type, broken, charge_amount, GPS, color)
 
     # Ride
-    def add_ride(self, plate, username, coordinate_a, coordinate_b):
-        vals = (plate, username, coordinate_a, coordinate_b)
-        self.execute_query("insert into ride values (?, ?, ?, ?)", vals)
+    def add_ride(self, plate, username, coordinate_a, coordinate_b, ride_date):
+        vals = (plate, username, coordinate_a, coordinate_b, ride_date)
+        self.execute_query("insert into ride values (?, ?, ?, ?, ?)", vals)
 
     def add_random_ride(self):
         all_plate = self.select_table_column("car", "plate")
@@ -224,8 +224,9 @@ class CarSharingDataBase:
         coordinate_b = generate_random_string(50)
         plate = random.choice(all_plate)[0]
         username = random.choice(all_username)[0]
+        ride_date = generate_random_date()
 
-        self.add_ride(plate, username, coordinate_a, coordinate_b)
+        self.add_ride(plate, username, coordinate_a, coordinate_b, ride_date)
 
     # Charge
     def add_charge(self, plate, UID, datetime):
@@ -268,11 +269,12 @@ class CarSharingDataBase:
 
     # Select Queries
     # First Query
-    def find_car(self, color, plate):
-        vals = (color, plate  + "%")
+    def find_car(self, color, plate, username, day):
+        vals = (color, plate  + "%", username, day)
         self.execute_query('''
-        select plate from car
-        where color = ? and plate like ?
+        select car.plate from car
+        join ride on car.plate = ride.plate
+        where color = ? and car.plate like ? and username = ? and ride_date >= ?
         ''', vals)
         plates = [x[0] for x in self.cursor.fetchall()]
         return plates
@@ -312,6 +314,5 @@ class CarSharingDataBase:
 
 if __name__ == '__main__':
     db = CarSharingDataBase()
-    db.add_car("AN123", "B", False, 228, "asfajsfl", "Red")
-    print(db.find_car("Red", "AN"))
+    print(db.find_car("Red", "AN", "Day7", '2018-01-11'))
     db.close_db()
