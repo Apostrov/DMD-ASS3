@@ -96,6 +96,8 @@ create table if not exists ride (
   username varchar (50) not null,
   coordinate_a varchar (100),
   coordinate_b varchar (100),
+  using_start datetime,
+  using_end datetime,
 
   foreign key (CID) references car (CID),
   foreign key (username) references customer (username)
