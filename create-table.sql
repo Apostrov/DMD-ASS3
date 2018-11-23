@@ -85,6 +85,8 @@ create table if not exists car (
   broken boolean,
   charge_amount int,
   GPS varchar (100),
+  plate varchar(15),
+  color varchar(40),
 
   primary key (CID)
 );
