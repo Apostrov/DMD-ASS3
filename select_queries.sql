@@ -1,3 +1,7 @@
+-- 1
+select * from car
+where color = 'Red' and plate like 'AN%'
+
 -- 2
 select charged_datetime from charge
 join charging_station on charge.UID == charging_station.UID

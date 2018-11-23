@@ -80,15 +80,14 @@ create table if not exists provide_car_parts (
 );
 
 create table if not exists car (
-  CID int not null,
+  plate varchar(15),
   type varchar (50),
   broken boolean,
   charge_amount int,
   GPS varchar (100),
-  plate varchar(15),
   color varchar(40),
 
-  primary key (CID)
+  primary key (plate)
 );
 
 create table if not exists ride (

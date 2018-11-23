@@ -192,27 +192,28 @@ class CarSharingDataBase:
         self.add_provide_car_parts(part_type, car_type, amount, specifications, PID, WID)
 
     # Car
-    def add_car(self, CID, type, broken, charge_amount, GPS):
-        vals = (CID, type, broken, charge_amount, GPS)
-        self.execute_query("insert into car values (?, ?, ?, ?, ?)", vals)
+    def add_car(self, plate, type, broken, charge_amount, GPS, color):
+        vals = (plate, type, broken, charge_amount, GPS, color)
+        self.execute_query("insert into car values (?, ?, ?, ?, ?, ?)", vals)
 
     def add_random_car(self):
-        CID = generate_random_int(10)
+        plate = generate_random_string(10)
         type = generate_random_string(50)
         broken = False
         charge_amount = generate_random_int(2)
         GPS = generate_random_string(50)
+        color = generate_random_string(10)
 
-        self.add_car(CID, type, broken, charge_amount, GPS)
+        self.add_car(plate, type, broken, charge_amount, GPS, color)
 
     # Ride
-    def add_ride(self, CID, username, coordinate_a, coordinate_b):
-        vals = (CID, username, coordinate_a, coordinate_b)
+    def add_ride(self, plate, username, coordinate_a, coordinate_b):
+        vals = (plate, username, coordinate_a, coordinate_b)
         self.execute_query("insert into ride values (?, ?, ?, ?)", vals)
 
     def add_random_ride(self):
-        all_cid = self.select_table_column("car", "CID")
-        if len(all_cid) < 1:
+        all_plate = self.select_table_column("car", "plate")
+        if len(all_plate) < 1:
             return
 
         all_username = self.select_table_column("customer", "username")
@@ -221,54 +222,62 @@ class CarSharingDataBase:
 
         coordinate_a = generate_random_string(50)
         coordinate_b = generate_random_string(50)
-        CID = random.choice(all_cid)[0]
+        plate = random.choice(all_plate)[0]
         username = random.choice(all_username)[0]
 
-        self.add_ride(CID, username, coordinate_a, coordinate_b)
+        self.add_ride(plate, username, coordinate_a, coordinate_b)
 
     # Charge
-    def add_charge(self, CID, UID, datetime):
-        vals = (CID, UID, datetime)
+    def add_charge(self, plate, UID, datetime):
+        vals = (plate, UID, datetime)
         self.execute_query("insert into charge values (?, ?, ?)", vals)
 
     def add_random_charge(self):
-        all_cid = self.select_table_column("car", "CID")
-        if len(all_cid) < 1:
+        all_plate = self.select_table_column("car", "plate")
+        if len(all_plate) < 1:
             return
 
         all_uid = self.select_table_column("charging_station", "UID")
         if len(all_uid) < 1:
             return
 
-        CID = random.choice(all_cid)[0]
+        plate = random.choice(all_plate)[0]
         UID = random.choice(all_uid)[0]
         datetime = generate_random_date() + " " + generate_random_time()
 
-        self.add_charge(CID, UID, datetime)
+        self.add_charge(plate, UID, datetime)
 
     # Repair
-    def add_repair(self, CID, WID):
-        vals = (CID, WID)
+    def add_repair(self, plate, WID):
+        vals = (plate, WID)
         self.execute_query("insert into repair values (?, ?)", vals)
 
     def add_random_repair(self):
-        all_cid = self.select_table_column("car", "CID")
-        if len(all_cid) < 1:
+        all_plate = self.select_table_column("car", "plate")
+        if len(all_plate) < 1:
             return
 
         all_wid = self.select_table_column("workshop", "WID")
         if len(all_wid) < 1:
             return
 
-        CID = random.choice(all_cid)[0]
+        plate = random.choice(all_plate)[0]
         WID = random.choice(all_wid)[0]
 
-        self.add_repair(CID, WID)
+        self.add_repair(plate, WID)
 
     # Select Queries
-    def first_query(self):
-        pass
+    # First Query
+    def find_car(self, color, plate):
+        vals = (color, plate  + "%")
+        self.execute_query('''
+        select plate from car
+        where color = ? and plate like ?
+        ''', vals)
+        plates = [x[0] for x in self.cursor.fetchall()]
+        return plates
 
+    # Second Query
     def number_sockets_occupied(self, uid, date):
         vals = (uid, date + "%")
         self.execute_query('''
@@ -303,5 +312,6 @@ class CarSharingDataBase:
 
 if __name__ == '__main__':
     db = CarSharingDataBase()
-    print(db.number_sockets_occupied('2338107531', '2018-02-05'))
+    db.add_car("AN123", "B", False, 228, "asfajsfl", "Red")
+    print(db.find_car("Red", "AN"))
     db.close_db()
