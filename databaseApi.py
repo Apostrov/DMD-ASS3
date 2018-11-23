@@ -11,6 +11,22 @@ def generate_random_string(length):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
 
+def generate_random_time():
+    hour = ''.join((random.choice('012'))) + ''.join((random.choice('0123')))
+    minute = ''.join(random.choices('012345', k=2))
+    second = ''.join(random.choices('012345', k=2))
+
+    return hour + ":" + minute + ":" + second
+
+
+def generate_random_date():
+    year = "2018"
+    month = ''.join(random.choice('01')) + ''.join(random.choice('12'))
+    day = ''.join(random.choice('012')) + generate_random_int(1)
+
+    return year + "-" + month + "-" + day
+
+
 class CarSharingDataBase:
     conn = sqlite3.connect('Car_sharing_service.db')
     cursor = conn.cursor()
@@ -30,14 +46,8 @@ class CarSharingDataBase:
     def __init__(self):
         self.open_db()
         create_sql_file = open('create-table.sql', 'r').read()
-        query = ''
-        for line in create_sql_file.split("\n"):
-            if line.startswith("create table"):
-                self.execute_query(query)
-                query = line
-            else:
-                query += line
-        self.execute_query(query)
+        self.cursor.executescript(create_sql_file)
+        self.conn.commit()
 
     # !!! Not secured from sql injection
     def select_table_column(self, table, column='*'):
@@ -53,7 +63,7 @@ class CarSharingDataBase:
         GPS = generate_random_string(50)
         city = generate_random_string(50)
         street = generate_random_string(50)
-        zip_code = generate_random_int(20)
+        zip_code = generate_random_int(10)
         self.add_location(GPS, city, street, zip_code)
 
     # Charging station
@@ -66,7 +76,7 @@ class CarSharingDataBase:
         if len(all_gps) < 1:
             return
 
-        UID = generate_random_int(20)
+        UID = generate_random_int(10)
         available_sockets = generate_random_int(2)
         price = generate_random_string(3)
         time_of_charging = generate_random_int(2)
@@ -117,7 +127,7 @@ class CarSharingDataBase:
         if len(all_gps) < 1:
             return
 
-        WID = generate_random_int(20)
+        WID = generate_random_int(10)
         timing_availability = "00:00:" + generate_random_int(2)
         GPS = random.choice(all_gps)[0]
 
@@ -217,9 +227,9 @@ class CarSharingDataBase:
         self.add_ride(CID, username, coordinate_a, coordinate_b)
 
     # Charge
-    def add_charge(self, CID, UID):
-        vals = (CID, UID)
-        self.execute_query("insert into charge values (?, ?)", vals)
+    def add_charge(self, CID, UID, datetime):
+        vals = (CID, UID, datetime)
+        self.execute_query("insert into charge values (?, ?, ?)", vals)
 
     def add_random_charge(self):
         all_cid = self.select_table_column("car", "CID")
@@ -232,8 +242,9 @@ class CarSharingDataBase:
 
         CID = random.choice(all_cid)[0]
         UID = random.choice(all_uid)[0]
+        datetime = generate_random_date() + " " + generate_random_time()
 
-        self.add_charge(CID, UID)
+        self.add_charge(CID, UID, datetime)
 
     # Repair
     def add_repair(self, CID, WID):
@@ -254,7 +265,26 @@ class CarSharingDataBase:
 
         self.add_repair(CID, WID)
 
+    # Select Queries
+    def first_query(self):
+        pass
+
+    def number_sockets_occupied(self, uid, date):
+        vals = (uid, date + "%")
+        self.execute_query('''
+        select strftime('%H', charged_datetime) from charge
+        join charging_station on charge.UID == charging_station.UID
+        where charge.UID = ? and charged_datetime like ?
+        ''', vals)
+        hours = [int(x[0]) for x in self.cursor.fetchall()]
+        occupied = []
+        for hour in range(24):
+            occupied.append(hours.count(hour))
+
+        return occupied
+
     # Another func
+    # May take a long time ((
     def add_random_data(self, amount):
         for i in range(amount):
             self.add_random_location()
@@ -273,5 +303,5 @@ class CarSharingDataBase:
 
 if __name__ == '__main__':
     db = CarSharingDataBase()
-    db.add_random_data(5)
+    print(db.number_sockets_occupied('2338107531', '2018-02-05'))
     db.close_db()
