@@ -74,6 +74,7 @@ create table if not exists provide_car_parts (
   specifications varchar (150),
   PID int not null,
   WID int not null,
+  provided_date date,
 
   foreign key (PID) references provider (PID),
   foreign key (WID) references workshop (WID)
