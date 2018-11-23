@@ -99,13 +99,14 @@ create table if not exists ride (
   foreign key (username) references customer (username)
 );
 
-create table if not exists charge (
-  CID int not null,
-  UID int not null,
+  create table if not exists charge (
+    CID int not null,
+    UID int not null,
+    charged_datetime datetime,
 
-  foreign key (CID) references car (CID),
-  foreign key (UID) references charging_station (UID)
-);
+    foreign key (CID) references car (CID),
+    foreign key (UID) references charging_station (UID)
+  );
 
 create table if not exists repair (
   CID int not null,
