@@ -102,6 +102,7 @@ create table if not exists ride (
 create table if not exists charge (
   CID int not null,
   UID int not null,
+  charged_datetime datetime,
 
   foreign key (CID) references car (CID),
   foreign key (UID) references charging_station (UID)
@@ -110,6 +111,7 @@ create table if not exists charge (
 create table if not exists repair (
   CID int not null,
   WID int not null,
+  repaired_datetime datetime,
 
   foreign key (CID) references car (CID),
   foreign key (WID) references workshop (WID)
