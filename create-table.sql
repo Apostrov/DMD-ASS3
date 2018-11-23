@@ -104,6 +104,7 @@ create table if not exists ride (
 create table if not exists charge (
   CID int not null,
   UID int not null,
+  charged_datetime datetime,
 
   foreign key (CID) references car (CID),
   foreign key (UID) references charging_station (UID)
