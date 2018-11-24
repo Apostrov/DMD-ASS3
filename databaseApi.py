@@ -226,7 +226,7 @@ class CarSharingDataBase:
         username = random.choice(all_username)[0]
         date = generate_random_date()
         using_start = date + " 00:00:00"
-        using_end =  date + generate_random_time()
+        using_end = date + generate_random_time()
 
         self.add_ride(plate, username, coordinate_a, coordinate_b, using_start, using_end)
 
@@ -272,7 +272,7 @@ class CarSharingDataBase:
     # Select Queries
     # First Query
     def find_car(self, color, plate, username, day):
-        vals = (color, plate  + "%", username, day)
+        vals = (color, plate + "%", username, day)
         self.execute_query('''
         select car.plate from car
         join ride on car.plate = ride.plate
@@ -295,6 +295,25 @@ class CarSharingDataBase:
             occupied.append(hours.count(hour))
 
         return occupied
+
+    # Third Query
+    def week_statistic(self):
+        self.execute_query('''
+        select strftime('%H', using_start), strftime('%H', using_end) from ride
+        where using_start BETWEEN datetime('now', '-6 days') AND datetime('now', 'localtime');
+        ''')
+        car_times = [[int(y) for y in x] for x in self.cursor.fetchall()]
+        cars_duringtime = [0, 0, 0]  # morning (7AM - 10 AM), afternoon (12AM - 2PM) and evening (5PM - 7PM)
+        for time in car_times:
+            if (7 <= time[0] <= 10) or (7 <= time[1] <= 10):
+                cars_duringtime[0] += 1
+            if (12 <= time[0] <= 14) or (12 <= time[1] <= 14):
+                cars_duringtime[1] += 1
+            if (17 <= time[0] <= 19) or (17 <= time[1] <= 19):
+                cars_duringtime[2] += 1
+        cars_amount = len(self.select_table_column('car', 'plate'))
+        cars_duringtime = [int(x / cars_amount * 100) for x in cars_duringtime]
+        return cars_duringtime
 
     # Another func
     # May take a long time
@@ -337,4 +356,5 @@ if __name__ == '__main__':
     # Query
     print(db.find_car("Red", "AN", "Day7", "2018-11-20"))
     print(db.number_sockets_occupied(12, "2018-11-20"))
+    print(db.week_statistic())
     db.close_db()
