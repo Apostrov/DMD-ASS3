@@ -1,6 +1,7 @@
 import sqlite3
 import random
 import string
+import datetime
 
 
 def generate_random_int(length):
@@ -231,8 +232,8 @@ class CarSharingDataBase:
         self.add_ride(plate, username, coordinate_a, coordinate_b, using_start, using_end)
 
     # Charge
-    def add_charge(self, plate, UID, datetime):
-        vals = (plate, UID, datetime)
+    def add_charge(self, plate, UID, charged_datetime):
+        vals = (plate, UID, charged_datetime)
         self.execute_query("insert into charge values (?, ?, ?)", vals)
 
     def add_random_charge(self):
@@ -246,9 +247,9 @@ class CarSharingDataBase:
 
         plate = random.choice(all_plate)[0]
         UID = random.choice(all_uid)[0]
-        datetime = generate_random_date() + " " + generate_random_time()
+        charged_datetime = generate_random_date() + " " + generate_random_time()
 
-        self.add_charge(plate, UID, datetime)
+        self.add_charge(plate, UID, charged_datetime)
 
     # Repair
     def add_repair(self, plate, WID):
@@ -321,13 +322,20 @@ class CarSharingDataBase:
 
     # Fifth Query
     def ride_statistic(self, day):
-        vals = (day, )
+        vals = (day,)
         self.execute_query('''
         select using_start, using_end, coordinate_a, coordinate_b from ride
         where date(using_start) = ?
         ''', vals)
-        time_and_coordinate = self.cursor.fetchall()
-        return time_and_coordinate
+        times_and_coordinates = self.cursor.fetchall()
+        durations = []
+        for tandc in times_and_coordinates:
+            time_start = datetime.datetime.strptime(tandc[0], '%Y-%m-%d %H:%M:%S')
+            time_end = datetime.datetime.strptime(tandc[1], '%Y-%m-%d %H:%M:%S')
+            durations.append(time_end - time_start)
+
+        average_time = sum([x.seconds for x in durations]) / len(durations)
+        return average_time
 
     # Another func
     # May take a long time
