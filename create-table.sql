@@ -2,26 +2,25 @@ create table if not exists location (
   GPS varchar (100) not null,
   city varchar (50),
   street varchar (50),
-  zip_code int,
+  zip_code integer,
 
   primary key (GPS)
 );
 
 create table if not exists charging_station (
-  UID int not null,
-  available_sockets int,
+  UID integer primary key autoincrement,
+  available_sockets integer,
   price varchar (50),
-  time_of_charging int,
+  time_of_charging integer,
   GPS varchar (100) not null,
 
-  primary key (UID),
   foreign key (GPS) references location (GPS)
 );
 
 create table if not exists plug (
-  UID int not null,
+  UID integer not null,
   shape varchar (50),
-  size int,
+  size integer,
 
   foreign key (UID) references charging_station (UID)
 );
@@ -38,83 +37,96 @@ create table if not exists customer (
 );
 
 create table if not exists workshop (
-  WID int not null,
-  timing_availability time,
+  WID integer primary key autoincrement,
+  open_time time,
+  close_time time,
   GPS varchar (100) not null,
 
-  primary key (WID),
   foreign key (GPS) references location (GPS)
 );
 
 create table if not exists car_part (
+  part_ID integer primary key autoincrement,
   part_type varchar (40),
-  car_type varchar (40),
-  amount varchar (40),
+  car_type varchar (50),
   specifications varchar (150),
-  id int not null,
-  WID int not null,
 
-  primary key (id),
+  foreign key (car_type) references car_type(car_type)
+);
+
+create table if not exists workshop_car_part (
+  amount integer,
+  part_ID integer not null,
+  WID integer not null,
+
+  foreign key (part_ID) references car_part (part_ID),
   foreign key (WID) references workshop (WID)
 );
 
 create table if not exists provider (
+  PID integer primary key autoincrement,
   phone_number varchar (20),
-  PID int not null,
   GPS varchar (100) not null,
 
-  primary key (PID),
   foreign key (gps) references location (GPS)
 );
 
 create table if not exists provide_car_parts (
-  part_type varchar (40),
-  car_type varchar (40),
-  amount varchar (40),
-  specifications varchar (150),
-  PID int not null,
-  WID int not null,
+  amount integer,
+  part_ID integer not null,
+  PID integer not null,
+  WID integer not null,
+  provided_date date,
 
+  foreign key (part_ID) references car_part (part_ID),
   foreign key (PID) references provider (PID),
   foreign key (WID) references workshop (WID)
 );
 
+create table if not exists car_type (
+  car_type varchar (50),
+
+  primary key (car_type)
+);
+
 create table if not exists car (
-  CID int not null,
-  type varchar (50),
+  plate varchar(15) not null,
+  car_type varchar(50) not null,
   broken boolean,
-  charge_amount int,
+  charge_amount integer,
   GPS varchar (100),
-  plate varchar(15),
   color varchar(40),
 
-  primary key (CID)
+  primary key (plate),
+  foreign key (car_type) references car_type(car_type)
 );
 
 create table if not exists ride (
-  CID int not null,
+  plate varchar(15) not null,
   username varchar (50) not null,
   coordinate_a varchar (100),
   coordinate_b varchar (100),
   using_start datetime,
   using_end datetime,
 
-  foreign key (CID) references car (CID),
+  foreign key (plate) references car (plate),
   foreign key (username) references customer (username)
 );
 
 create table if not exists charge (
-  CID int not null,
-  UID int not null,
+  plate varchar(15) not null,
+  UID integer not null,
+  charged_datetime datetime,
 
-  foreign key (CID) references car (CID),
+  foreign key (plate) references car (plate),
   foreign key (UID) references charging_station (UID)
 );
 
 create table if not exists repair (
-  CID int not null,
-  WID int not null,
+  plate varchar(15) not null,
+  WID integer not null,
+  repair_date date,
 
-  foreign key (CID) references car (CID),
+  foreign key (plate) references car (plate),
   foreign key (WID) references workshop (WID)
 );
