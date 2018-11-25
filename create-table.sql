@@ -46,12 +46,20 @@ create table if not exists workshop (
 );
 
 create table if not exists car_part (
+  part_ID integer primary key autoincrement,
   part_type varchar (40),
-  car_type varchar (40),
-  amount integer,
+  car_type varchar (50),
   specifications varchar (150),
+
+  foreign key (car_type) references car_type(car_type)
+);
+
+create table if not exists workshop_car_part (
+  amount integer,
+  part_ID integer not null,
   WID integer not null,
 
+  foreign key (part_ID) references car_part (part_ID),
   foreign key (WID) references workshop (WID)
 );
 
@@ -64,27 +72,33 @@ create table if not exists provider (
 );
 
 create table if not exists provide_car_parts (
-  part_type varchar (40),
-  car_type varchar (40),
   amount integer,
-  specifications varchar (150),
+  part_ID integer not null,
   PID integer not null,
   WID integer not null,
   provided_date date,
 
+  foreign key (part_ID) references car_part (part_ID),
   foreign key (PID) references provider (PID),
   foreign key (WID) references workshop (WID)
 );
 
+create table if not exists car_type (
+  car_type varchar (50),
+
+  primary key (car_type)
+);
+
 create table if not exists car (
-  plate varchar(15),
-  type varchar (50),
+  plate varchar(15) not null,
+  car_type varchar(50) not null,
   broken boolean,
   charge_amount integer,
   GPS varchar (100),
   color varchar(40),
 
-  primary key (plate)
+  primary key (plate),
+  foreign key (car_type) references car_type(car_type)
 );
 
 create table if not exists ride (
