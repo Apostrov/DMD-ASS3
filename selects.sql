@@ -30,5 +30,12 @@ where (cast(strftime('%H', using_start) as integer)>= 7 and (cast(strftime('%H',
    or (cast(strftime('%H', using_start) as integer)>= 17 and (cast(strftime('%H', using_start) as integer) <= 19))
 order by car.plate;
 
+-- 8
+select ride.username from ride
+join charge on ride.plate = charge.plate
+where ((cast(((julianday('now') - julianday(ride.using_start))/(365/12)) as integer) < 1)
+   and (cast(strftime('%d', using_start) as integer) = cast(strftime('%d', charged_datetime) as integer)))
+order by ride.username;
+
 -- 9
 select part_type, car_type, amount, WID, provided_date from provide_car_parts
