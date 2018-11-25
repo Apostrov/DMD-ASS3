@@ -56,8 +56,8 @@ create table if not exists car_part (
 );
 
 create table if not exists provider (
-  phone_number varchar (20),
   PID integer primary key autoincrement,
+  phone_number varchar (20),
   GPS varchar (100) not null,
 
   foreign key (gps) references location (GPS)

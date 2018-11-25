@@ -178,8 +178,8 @@ class CarSharingDataBase:
         self.add_provider(phone_number, GPS)
 
     # Provide car parts
-    def add_provide_car_parts(self, part_type, car_part, amount, specifications, provided_date, PID, WID):
-        vals = (part_type, car_part, amount, specifications, provided_date, PID, WID)
+    def add_provide_car_parts(self, part_type, car_part, amount, specifications, PID, WID, provided_date):
+        vals = (part_type, car_part, amount, specifications, PID, WID, provided_date)
         self.execute_query("insert into provide_car_parts values (?, ?, ?, ?, ?, ?, ?)", vals)
 
     def add_random_provide_car_parts(self):
@@ -199,7 +199,7 @@ class CarSharingDataBase:
         PID = random.choice(all_pid)[0]
         WID = random.choice(all_wid)[0]
 
-        self.add_provide_car_parts(part_type, car_type, amount, specifications, provided_date, PID, WID)
+        self.add_provide_car_parts(part_type, car_type, amount, specifications, PID, WID, provided_date)
 
     # Car
     def add_car(self, plate, type, broken, charge_amount, GPS, color):
@@ -425,7 +425,7 @@ if __name__ == '__main__':
     db.add_workshop("06:00:00", "20:00:00", "gps")
     db.add_car_part("part", "type", 120, "spec", 1)
     db.add_provider("phone_numb", "gps")
-    db.add_provide_car_parts("part", "type", 120, "spec", "2018-11-19", 1, 1)
+    db.add_provide_car_parts("part", "type", 120, "spec", 1, 1, "2018-11-19")
     db.add_car("AN123", "B", False, 100, "gps1", "Red")
     db.add_ride("AN123", "Day7", "gps1", "gps", "2018-11-20 07:00:00", "2018-11-20 08:30:00")
     db.add_charge("AN123", 1, "2018-11-20 09:00:00")
