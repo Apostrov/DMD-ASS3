@@ -125,6 +125,7 @@ create table if not exists charge (
 create table if not exists repair (
   plate varchar(15) not null,
   WID integer not null,
+  repair_date date,
 
   foreign key (plate) references car (plate),
   foreign key (WID) references workshop (WID)

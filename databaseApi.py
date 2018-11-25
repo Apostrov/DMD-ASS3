@@ -30,11 +30,9 @@ def generate_random_date():
 
 
 def increment_value_dict(key, dictionary, value):
-    if key in dictionary.keys():
-        dictionary[key] += value
-    else:
-        dictionary[key] = value
-
+    if key not in dictionary.keys():
+        dictionary[key] = 0
+    dictionary[key] += value
     return dictionary
 
 
@@ -58,6 +56,25 @@ class CarSharingDataBase:
         self.open_db()
         create_sql_file = open('create-table.sql', 'r').read()
         self.cursor.executescript(create_sql_file)
+        self.conn.commit()
+
+    def drop_all_tables(self):
+        self.cursor.executescript('''
+        drop table charge;
+        drop table plug;
+        drop table charging_station;
+        drop table provide_car_parts;
+        drop table provider;
+        drop table repair;
+        drop table ride;
+        drop table car;
+        drop table customer;
+        drop table workshop_car_part;
+        drop table car_part;
+        drop table car_type;
+        drop table workshop;
+        drop table location;
+        ''')
         self.conn.commit()
 
     # !!! Not secured from sql injection
@@ -295,9 +312,9 @@ class CarSharingDataBase:
         self.add_charge(plate, UID, charged_datetime)
 
     # Repair
-    def add_repair(self, plate, WID):
-        vals = (plate, WID)
-        self.execute_query("insert into repair values (?, ?)", vals)
+    def add_repair(self, plate, WID, repair_date):
+        vals = (plate, WID, repair_date)
+        self.execute_query("insert into repair values (?, ?, ?)", vals)
 
     def add_random_repair(self):
         all_plate = self.select_table_column("car", "plate")
@@ -310,8 +327,9 @@ class CarSharingDataBase:
 
         plate = random.choice(all_plate)[0]
         WID = random.choice(all_wid)[0]
+        repair_date = generate_random_date()
 
-        self.add_repair(plate, WID)
+        self.add_repair(plate, WID, repair_date)
 
     # May take a long time
     def add_random_data(self, amount):
@@ -438,26 +456,13 @@ class CarSharingDataBase:
                 sorted(evening_pickups, key=evening_pickups.get, reverse=True)[:3],
                 sorted(evening_travelpoints, key=evening_travelpoints.get, reverse=True)[:3]]
 
-    # Ninth Query
-    def often_require_car_part(self):
-        self.execute_query('''
-        select part_type, car_type, amount, WID, provided_date from provide_car_parts
-        ''')
-        provided_car_parts = self.cursor.fetchall()
-        wid_car_part = {}
-        for pcp in provided_car_parts:
-            key = pcp[0] + pcp[1]
-            increment_value_dict(key, wid_car_part, pcp[2])
-        pass
 
 
-if __name__ == '__main__':
-    db = CarSharingDataBase()
 
-    # Random test
+def sample_start():
+    db.drop_all_tables()
     db.add_random_data(4)
 
-    # Hand add
     db.add_location("gps", "ksz", "strt", 111)
     db.add_charging_station(5, "10$", 10, "gps")
     db.add_plug(1, "shp", 10)
@@ -471,8 +476,12 @@ if __name__ == '__main__':
     db.add_car("AN123", "B", False, 100, "gps1", "Red")
     db.add_ride("AN123", "Day7", "gps1", "gps", "2018-11-20 07:00:00", "2018-11-20 08:30:00")
     db.add_charge("AN123", 1, "2018-11-20 09:00:00")
-    db.add_repair("AN123", 1)
+    db.add_repair("AN123", 1, "2018-10-31")
 
+
+if __name__ == '__main__':
+    db = CarSharingDataBase()
+    # sample_start()
     # Query
     print(db.find_car("Red", "AN", "Day7", "2018-11-20"))
     print(db.number_sockets_occupied(1, "2018-11-20"))
