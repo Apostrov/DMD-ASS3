@@ -23,4 +23,4 @@ where (cast(strftime('%H', using_start) as integer)>= 7 and (cast(strftime('%H',
    or (cast(strftime('%H', using_start) as integer)>= 17 and (cast(strftime('%H', using_start) as integer) <= 19));
 
 -- 9
-select * from provide_car_parts
+select part_type, car_type, amount, WID, provided_date from provide_car_parts

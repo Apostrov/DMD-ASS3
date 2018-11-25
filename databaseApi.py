@@ -78,21 +78,21 @@ class CarSharingDataBase:
         self.add_location(GPS, city, street, zip_code)
 
     # Charging station
-    def add_charging_station(self, UID, available_sockets, price, time_of_charging, GPS):
-        vals = (UID, available_sockets, price, time_of_charging, GPS)
-        self.execute_query("insert into charging_station values (?, ?, ?, ?, ?)", vals)
+    def add_charging_station(self, available_sockets, price, time_of_charging, GPS):
+        vals = (available_sockets, price, time_of_charging, GPS)
+        self.execute_query(
+            "insert into charging_station (available_sockets, price, time_of_charging, GPS) values (?, ?, ?, ?)", vals)
 
     def add_random_charging_station(self):
         all_gps = self.select_table_column("location", "GPS")
         if len(all_gps) < 1:
             return
 
-        UID = generate_random_int(10)
         available_sockets = generate_random_int(2)
         price = generate_random_string(3)
         time_of_charging = generate_random_int(2)
         GPS = random.choice(all_gps)[0]
-        self.add_charging_station(UID, available_sockets, price, time_of_charging, GPS)
+        self.add_charging_station(available_sockets, price, time_of_charging, GPS)
 
     # Plug
     def add_plug(self, UID, shape, size):
@@ -129,21 +129,20 @@ class CarSharingDataBase:
         self.add_customer(username, fullname, phone_number, email, GPS)
 
     # Workshop
-    def add_workshop(self, WID, open_time, close_time, GPS):
-        vals = (WID, open_time, close_time, GPS)
-        self.execute_query("insert into workshop values (?, ?, ?, ?)", vals)
+    def add_workshop(self, open_time, close_time, GPS):
+        vals = (open_time, close_time, GPS)
+        self.execute_query("insert into workshop (open_time, close_time, GPS) values (?, ?, ?)", vals)
 
     def add_random_workshop(self):
         all_gps = self.select_table_column("location", "GPS")
         if len(all_gps) < 1:
             return
 
-        WID = generate_random_int(10)
         open_time = generate_random_time()
         close_time = generate_random_time()
         GPS = random.choice(all_gps)[0]
 
-        self.add_workshop(WID, open_time, close_time, GPS)
+        self.add_workshop(open_time, close_time, GPS)
 
     # Car part
     def add_car_part(self, part_type, car_part, amount, specifications, WID):
@@ -164,9 +163,9 @@ class CarSharingDataBase:
         self.add_car_part(part_type, car_type, amount, specifications, WID)
 
     # Provider
-    def add_provider(self, phone_number, PID, GPS):
-        vals = (phone_number, PID, GPS)
-        self.execute_query("insert into provider values (?, ?, ?)", vals)
+    def add_provider(self, phone_number, GPS):
+        vals = (phone_number, GPS)
+        self.execute_query("insert into provider (phone_number, GPS) values (?, ?)", vals)
 
     def add_random_provider(self):
         all_gps = self.select_table_column("location", "GPS")
@@ -174,15 +173,14 @@ class CarSharingDataBase:
             return
 
         phone_number = generate_random_string(20)
-        PID = generate_random_int(10)
         GPS = random.choice(all_gps)[0]
 
-        self.add_provider(phone_number, PID, GPS)
+        self.add_provider(phone_number, GPS)
 
     # Provide car parts
-    def add_provide_car_parts(self, part_type, car_part, amount, specifications, PID, WID):
-        vals = (part_type, car_part, amount, specifications, PID, WID)
-        self.execute_query("insert into provide_car_parts values (?, ?, ?, ?, ?, ?)", vals)
+    def add_provide_car_parts(self, part_type, car_part, amount, specifications, provided_date, PID, WID):
+        vals = (part_type, car_part, amount, specifications, provided_date, PID, WID)
+        self.execute_query("insert into provide_car_parts values (?, ?, ?, ?, ?, ?, ?)", vals)
 
     def add_random_provide_car_parts(self):
         all_wid = self.select_table_column("workshop", "WID")
@@ -197,10 +195,11 @@ class CarSharingDataBase:
         car_type = generate_random_string(40)
         amount = generate_random_int(4)
         specifications = generate_random_string(100)
+        provided_date = generate_random_date()
         PID = random.choice(all_pid)[0]
         WID = random.choice(all_wid)[0]
 
-        self.add_provide_car_parts(part_type, car_type, amount, specifications, PID, WID)
+        self.add_provide_car_parts(part_type, car_type, amount, specifications, provided_date, PID, WID)
 
     # Car
     def add_car(self, plate, type, broken, charge_amount, GPS, color):
@@ -280,6 +279,22 @@ class CarSharingDataBase:
 
         self.add_repair(plate, WID)
 
+    # May take a long time
+    def add_random_data(self, amount):
+        for i in range(amount):
+            self.add_random_location()
+            self.add_random_charging_station()
+            self.add_random_plug()
+            self.add_random_customer()
+            self.add_random_workshop()
+            self.add_random_car_part()
+            self.add_random_provider()
+            self.add_random_provide_car_parts()
+            self.add_random_car()
+            self.add_random_ride()
+            self.add_random_charge()
+            self.add_random_repair()
+
     # Select Queries
     # First Query
     def find_car(self, color, plate, username, day):
@@ -354,7 +369,7 @@ class CarSharingDataBase:
     def popular_travel(self):
         self.execute_query('''
         select strftime('%H', using_start), coordinate_a, coordinate_b from ride
-        where (cast(strftime('%H', using_start) as integer)>= 7 and (cast(strftime('%H', using_start) as integer) <= 10))
+        where (cast(strftime('%H', using_start) as integer)>= 7 and (cast(strftime('%H', using_start) as integer)<= 10))
         or (cast(strftime('%H', using_start) as integer)>= 12 and (cast(strftime('%H', using_start) as integer) <= 14))
         or (cast(strftime('%H', using_start) as integer)>= 17 and (cast(strftime('%H', using_start) as integer) <= 19))
         ''')
@@ -387,21 +402,13 @@ class CarSharingDataBase:
                 sorted(evening_pickups, key=evening_pickups.get, reverse=True)[:3],
                 sorted(evening_travelpoints, key=evening_travelpoints.get, reverse=True)[:3]]
 
-    # May take a long time
-    def add_random_data(self, amount):
-        for i in range(amount):
-            self.add_random_location()
-            self.add_random_charging_station()
-            self.add_random_plug()
-            self.add_random_customer()
-            self.add_random_workshop()
-            self.add_random_car_part()
-            self.add_random_provider()
-            self.add_random_provide_car_parts()
-            self.add_random_car()
-            self.add_random_ride()
-            self.add_random_charge()
-            self.add_random_repair()
+    # Ninth Query
+    def often_require_car_part(self):
+        self.execute_query('''
+        select part_type, car_type, amount, WID, provided_date from provide_car_parts
+        ''')
+        provided_car_part = self.cursor.fetchall()
+        return provided_car_part
 
 
 if __name__ == '__main__':
@@ -409,25 +416,26 @@ if __name__ == '__main__':
     '''
     # Random test
     db.add_random_data(4)
-    
+
     # Hand add
     db.add_location("gps", "ksz", "strt", 111)
-    db.add_charging_station(12, 5, "10$", 10, "gps")
-    db.add_plug(12, "shp", 10)
+    db.add_charging_station(5, "10$", 10, "gps")
+    db.add_plug(1, "shp", 10)
     db.add_customer("Day7", "7", "77", "777", "7777")
-    db.add_workshop(21, "06:00:00", "20:00:00", "gps")
-    db.add_car_part("part", "type", 120, "spec", 21)
-    db.add_provider("phone_numb", 11, "gps")
-    db.add_provide_car_parts("part", "type", 120, "spec", 11, 21)
+    db.add_workshop("06:00:00", "20:00:00", "gps")
+    db.add_car_part("part", "type", 120, "spec", 1)
+    db.add_provider("phone_numb", "gps")
+    db.add_provide_car_parts("part", "type", 120, "spec", "2018-11-19", 1, 1)
     db.add_car("AN123", "B", False, 100, "gps1", "Red")
     db.add_ride("AN123", "Day7", "gps1", "gps", "2018-11-20 07:00:00", "2018-11-20 08:30:00")
-    db.add_charge("AN123", 12, "2018-11-20 09:00:00")
-    db.add_repair("AN123", 21)
+    db.add_charge("AN123", 1, "2018-11-20 09:00:00")
+    db.add_repair("AN123", 1)
     '''
     # Query
     print(db.find_car("Red", "AN", "Day7", "2018-11-20"))
-    print(db.number_sockets_occupied(12, "2018-11-20"))
+    print(db.number_sockets_occupied(1, "2018-11-20"))
     print(db.week_statistic())
     print(db.ride_statistic('2018-11-20'))
     print(db.popular_travel())
+    print(db.often_require_car_part())
     db.close_db()
