@@ -4,6 +4,7 @@ import string
 import datetime
 
 
+# Helpful functions
 def generate_random_int(length):
     return ''.join(random.choices(string.digits, k=length))
 
@@ -28,6 +29,15 @@ def generate_random_date():
     return year + "-" + month + "-" + day
 
 
+def increment_value_dict(key, dictionary):
+    if key in dictionary.keys():
+        dictionary[key] += 1
+    else:
+        dictionary[key] = 1
+
+    return dictionary
+
+
 class CarSharingDataBase:
     conn = sqlite3.connect('Car_sharing_service.db')
     cursor = conn.cursor()
@@ -40,7 +50,7 @@ class CarSharingDataBase:
         self.conn.commit()
         self.conn.close()
 
-    def execute_query(self, query, vals=''):
+    def execute_query(self, query, vals=()):
         self.cursor.execute(query, vals)
         self.conn.commit()
 
@@ -226,8 +236,8 @@ class CarSharingDataBase:
         plate = random.choice(all_plate)[0]
         username = random.choice(all_username)[0]
         date = generate_random_date()
-        using_start = date + " 00:00:00"
         using_end = date + " " + generate_random_time()
+        using_start = using_end[:-7] + "0:00:00"
 
         self.add_ride(plate, username, coordinate_a, coordinate_b, using_start, using_end)
 
@@ -303,16 +313,18 @@ class CarSharingDataBase:
         select strftime('%H', using_start), strftime('%H', using_end) from ride
         where using_start BETWEEN datetime('now', '-6 days') AND datetime('now', 'localtime');
         ''')
-        car_times = [[int(y) for y in x] for x in self.cursor.fetchall()]
+        car_times = self.cursor.fetchall()
         cars_duringtime = [0, 0, 0]  # morning (7AM - 10 AM), afternoon (12AM - 2PM) and evening (5PM - 7PM)
         for time in car_times:
-            if (7 <= time[0] <= 10) or (7 <= time[1] <= 10):
+            if (7 <= int(time[0]) <= 10) or (7 <= int(time[1]) <= 10):
                 cars_duringtime[0] += 1
-            if (12 <= time[0] <= 14) or (12 <= time[1] <= 14):
+            if (12 <= int(time[0]) <= 14) or (12 <= int(time[1]) <= 14):
                 cars_duringtime[1] += 1
-            if (17 <= time[0] <= 19) or (17 <= time[1] <= 19):
+            if (17 <= int(time[0]) <= 19) or (17 <= int(time[1]) <= 19):
                 cars_duringtime[2] += 1
         cars_amount = len(self.select_table_column('car', 'plate'))
+        if cars_amount == 0:
+            return [0, 0, 0]
         cars_duringtime = [int(x / cars_amount * 100) for x in cars_duringtime]
         return cars_duringtime
 
@@ -333,11 +345,48 @@ class CarSharingDataBase:
             time_start = datetime.datetime.strptime(tandc[0], '%Y-%m-%d %H:%M:%S')
             time_end = datetime.datetime.strptime(tandc[1], '%Y-%m-%d %H:%M:%S')
             durations.append(time_end - time_start)
-
+        if len(durations) == 0:
+            return 0
         average_time = sum([x.seconds for x in durations]) / len(durations)
         return average_time
 
-    # Another func
+    # Sixth Query
+    def popular_travel(self):
+        self.execute_query('''
+        select strftime('%H', using_start), coordinate_a, coordinate_b from ride
+        where (cast(strftime('%H', using_start) as integer)>= 7 and (cast(strftime('%H', using_start) as integer) <= 10))
+        or (cast(strftime('%H', using_start) as integer)>= 12 and (cast(strftime('%H', using_start) as integer) <= 14))
+        or (cast(strftime('%H', using_start) as integer)>= 17 and (cast(strftime('%H', using_start) as integer) <= 19))
+        ''')
+
+        time_and_coordinates = self.cursor.fetchall()
+        morning_pickups = {}
+        morning_travelpoints = {}
+
+        afternoon_pickups = {}
+        afternoon_travelpoints = {}
+
+        evening_pickups = {}
+        evening_travelpoints = {}
+
+        for tandc in time_and_coordinates:
+            if 7 <= int(tandc[0]) <= 10:
+                morning_pickups = increment_value_dict(tandc[1], morning_pickups)
+                morning_travelpoints = increment_value_dict(tandc[2], morning_travelpoints)
+            if 12 <= int(tandc[0]) <= 14:
+                afternoon_pickups = increment_value_dict(tandc[1], afternoon_pickups)
+                afternoon_travelpoints = increment_value_dict(tandc[2], afternoon_travelpoints)
+            if 17 <= int(tandc[0]) <= 19:
+                evening_pickups = increment_value_dict(tandc[1], evening_pickups)
+                evening_travelpoints = increment_value_dict(tandc[2], evening_travelpoints)
+
+        return [sorted(morning_pickups, key=morning_pickups.get, reverse=True)[:3],
+                sorted(morning_travelpoints, key=morning_travelpoints.get, reverse=True)[:3],
+                sorted(afternoon_pickups, key=afternoon_pickups.get, reverse=True)[:3],
+                sorted(afternoon_travelpoints, key=afternoon_travelpoints.get, reverse=True)[:3],
+                sorted(evening_pickups, key=evening_pickups.get, reverse=True)[:3],
+                sorted(evening_travelpoints, key=evening_travelpoints.get, reverse=True)[:3]]
+
     # May take a long time
     def add_random_data(self, amount):
         for i in range(amount):
@@ -371,7 +420,7 @@ if __name__ == '__main__':
     db.add_provider("phone_numb", 11, "gps")
     db.add_provide_car_parts("part", "type", 120, "spec", 11, 21)
     db.add_car("AN123", "B", False, 100, "gps1", "Red")
-    db.add_ride("AN123", "Day7", "gps1", "gps", "2018-11-20 06:00:00", "2018-11-20 08:30:00")
+    db.add_ride("AN123", "Day7", "gps1", "gps", "2018-11-20 07:00:00", "2018-11-20 08:30:00")
     db.add_charge("AN123", 12, "2018-11-20 09:00:00")
     db.add_repair("AN123", 21)
     '''
@@ -380,4 +429,5 @@ if __name__ == '__main__':
     print(db.number_sockets_occupied(12, "2018-11-20"))
     print(db.week_statistic())
     print(db.ride_statistic('2018-11-20'))
+    print(db.popular_travel())
     db.close_db()
