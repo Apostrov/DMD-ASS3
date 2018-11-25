@@ -39,7 +39,8 @@ create table if not exists customer (
 
 create table if not exists workshop (
   WID int not null,
-  timing_availability time,
+  open_time time,
+  close_time time,
   GPS varchar (100) not null,
 
   primary key (WID),
@@ -49,12 +50,10 @@ create table if not exists workshop (
 create table if not exists car_part (
   part_type varchar (40),
   car_type varchar (40),
-  amount varchar (40),
+  amount int,
   specifications varchar (150),
-  id int not null,
   WID int not null,
 
-  primary key (id),
   foreign key (WID) references workshop (WID)
 );
 
@@ -70,7 +69,7 @@ create table if not exists provider (
 create table if not exists provide_car_parts (
   part_type varchar (40),
   car_type varchar (40),
-  amount varchar (40),
+  amount int,
   specifications varchar (150),
   PID int not null,
   WID int not null,
@@ -81,37 +80,41 @@ create table if not exists provide_car_parts (
 );
 
 create table if not exists car (
-  CID int not null,
+  plate varchar(15),
   type varchar (50),
   broken boolean,
   charge_amount int,
   GPS varchar (100),
+  color varchar(40),
 
-  primary key (CID)
+  primary key (plate)
 );
 
 create table if not exists ride (
-  CID int not null,
+  plate int not null,
   username varchar (50) not null,
   coordinate_a varchar (100),
   coordinate_b varchar (100),
+  using_start datetime,
+  using_end datetime,
 
-  foreign key (CID) references car (CID),
+  foreign key (plate) references car (plate),
   foreign key (username) references customer (username)
 );
 
 create table if not exists charge (
-  CID int not null,
+  plate int not null,
   UID int not null,
+  charged_datetime datetime,
 
-  foreign key (CID) references car (CID),
+  foreign key (plate) references car (plate),
   foreign key (UID) references charging_station (UID)
 );
 
 create table if not exists repair (
-  CID int not null,
+  plate int not null,
   WID int not null,
 
-  foreign key (CID) references car (CID),
+  foreign key (plate) references car (plate),
   foreign key (WID) references workshop (WID)
 );
