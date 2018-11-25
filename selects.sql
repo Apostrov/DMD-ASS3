@@ -12,6 +12,12 @@ where charge.UID = 4299950248 and charged_datetime like '2018-05-06%'; -- exampl
 select using_start, using_end from ride
 where using_start BETWEEN datetime('now', '-6 days') AND datetime('now', 'localtime');
 
+-- 4
+select charged_datetime from charge
+join ride on charge.plate = ride.plate
+where (cast(((julianday('now') - julianday(charged_datetime))/(365/12)) as integer) < 1) and (username = 'Day7') -- example
+order by charged_datetime;
+
 -- 5
 select using_start, using_end, coordinate_a, coordinate_b from ride
 where using_start = '2018-11-20'; -- example
