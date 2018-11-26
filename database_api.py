@@ -31,6 +31,12 @@ def generate_random_date():
     return year + "-" + month + "-" + day
 
 
+def generate_random_gps():
+    latitude = random.uniform(40, 60)
+    longitude = random.uniform(30, 130)
+    return str(latitude) + ", " + str(longitude)
+
+
 class CarSharingDataBase:
     conn = sqlite3.connect('Car_sharing_service.db')
     cursor = conn.cursor()
@@ -91,7 +97,7 @@ class CarSharingDataBase:
         self.execute_query("insert into location values (?, ?, ?, ?)", vals)
 
     def add_random_location(self):
-        GPS = generate_random_string(50)
+        GPS = generate_random_gps()
         city = generate_random_string(50)
         street = generate_random_string(50)
         zip_code = generate_random_int(10)
@@ -265,7 +271,7 @@ class CarSharingDataBase:
         car_type = random.choice(all_car_type)[0]
         broken = False
         charge_amount = generate_random_int(2)
-        GPS = generate_random_string(50)
+        GPS = generate_random_gps()
         color = generate_random_string(10)
         purchase_date = '2017-01-01'
 
@@ -285,8 +291,8 @@ class CarSharingDataBase:
         if len(all_username) < 1:
             return
 
-        coordinate_a = generate_random_string(50)
-        coordinate_b = generate_random_string(50)
+        coordinate_a = generate_random_gps()
+        coordinate_b = generate_random_gps()
         plate = random.choice(all_plate)[0]
         username = random.choice(all_username)[0]
         date = generate_random_date()

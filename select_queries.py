@@ -273,6 +273,7 @@ def car_with_expensive_service(db):
 
 
 def sample_start(db):
+    print("Recreating database")
     db.recreate_all_tables()
     db.add_random_data(20)
 
@@ -286,7 +287,7 @@ def sample_start(db):
     db.add_workshop_car_part(100, 1, 2)
     db.add_provider("phone_numb", "gps")
     db.add_provide_car_parts(120, 1, 1, 1, "2018-11-19")
-    db.add_car("AN123", "B", False, 100, "gps1", "Red", "2017-10-10")
+    db.add_car("AN123", "B", False, 100, "41.74761564285939, 97.39815428536774", "Red", "2017-10-10")
     db.add_ride("AN123", "Day7", "gps1", "gps", "2018-11-20 07:00:00", "2018-11-20 08:30:00")
     db.add_charge("AN123", 1, 6, "2018-11-20 08:00:00")
     db.add_charge("AN123", 1, 6, "2018-11-20 08:20:00")
@@ -305,6 +306,6 @@ if __name__ == '__main__':
     print(often_require_car_part(db))
     print(car_with_expensive_service(db))
     delete_car_ten_percentage(db)
-    print(charge_amount(db, '2017.10.01'))
+    print(charge_amount(db, '2017-10-01'))
     print(twice_charge(db, "Day7"))
     db.close_db()
