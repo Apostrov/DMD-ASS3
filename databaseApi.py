@@ -58,7 +58,7 @@ class CarSharingDataBase:
         self.cursor.executescript(create_sql_file)
         self.conn.commit()
 
-    def drop_all_tables(self):
+    def recreate_all_tables(self):
         self.cursor.executescript('''
         drop table charge;
         drop table plug;
@@ -76,6 +76,7 @@ class CarSharingDataBase:
         drop table location;
         ''')
         self.conn.commit()
+        self.__init__()
 
     # !!! Not secured from sql injection
     def select_table_column(self, table, column='*'):
@@ -456,11 +457,55 @@ class CarSharingDataBase:
                 sorted(evening_pickups, key=evening_pickups.get, reverse=True)[:3],
                 sorted(evening_travelpoints, key=evening_travelpoints.get, reverse=True)[:3]]
 
+    # Ninth Query
+    def often_require_car_part(self):
+        self.execute_query('''
+        select part_ID, WID, amount, provided_date from provide_car_parts
+        ''')
+        provided_car_parts = self.cursor.fetchall()
+        wid_car_part = {}
+        for pcp in provided_car_parts:
+            partID = pcp[0]
+            wid = pcp[1]
+            amount = pcp[2]
+            provide_data = datetime.datetime.strptime(pcp[3], '%Y-%m-%d')
 
+            if wid not in wid_car_part:
+                wid_car_part[wid] = {}
+
+            if partID not in wid_car_part[wid]:
+                wid_car_part[wid][partID] = {'amount': 0, "first_add_data": provide_data}
+
+            wid_car_part[wid][partID]['amount'] += amount
+
+            if wid_car_part[wid][partID]["first_add_data"] > provide_data:
+                wid_car_part[wid][partID]["first_add_data"] = provide_data
+
+        require_car_part = {}
+        for wid in wid_car_part.keys():
+            if wid not in require_car_part:
+                require_car_part[wid] = {}
+            for partID in wid_car_part[wid].keys():
+                days = (datetime.datetime.now() - wid_car_part[wid][partID]['first_add_data']).days
+                if days == 0:
+                    days = 1
+                amount = wid_car_part[wid][partID]['amount'] / days
+                if len(require_car_part[wid]) == 0:
+                    require_car_part[wid] = [partID, amount]
+                elif require_car_part[wid][1] < amount:
+                    require_car_part[wid] = [partID, amount]
+
+        vals = [part[0] for part in require_car_part.values()]
+        self.execute_query('''
+        select part_ID, part_type, car_type from car_part
+        where part_ID in ''' + str(tuple(vals)))
+        
+        part_info = self.cursor.fetchall()
+        return require_car_part, part_info
 
 
 def sample_start():
-    db.drop_all_tables()
+    db.recreate_all_tables()
     db.add_random_data(4)
 
     db.add_location("gps", "ksz", "strt", 111)
@@ -488,5 +533,5 @@ if __name__ == '__main__':
     print(db.week_statistic())
     print(db.ride_statistic('2018-11-20'))
     print(db.popular_travel())
-    # print(db.often_require_car_part())
+    print(db.often_require_car_part())
     db.close_db()
