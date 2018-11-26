@@ -305,7 +305,7 @@ def car_with_expensive_service(db):
 def sample_start(db):
     print("Recreating database")
     db.recreate_all_tables()
-    db.add_random_data(20)
+    db.add_random_data(10)
 
     db.add_location("50, 50", "ksz", "strt", 111)
     db.add_charging_station(5, "10$", 10, "50, 50")
@@ -326,7 +326,7 @@ def sample_start(db):
 
 if __name__ == '__main__':
     db = CarSharingDataBase()
-    db.add_random_data(40)
+    db.add_random_data(10)
     # sample_start(db)
     # Query
     print("First Query")
@@ -348,7 +348,7 @@ if __name__ == '__main__':
     print(popular_travel(db))
 
     print("Seventh Query")
-    #delete_car_ten_percentage(db)
+    delete_car_ten_percentage(db)
 
     print("Eighth Query")
     print(charge_amount(db, '2017-10-01'))
