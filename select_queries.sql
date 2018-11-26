@@ -17,7 +17,7 @@ where charge.UID = 4299950248
 -- 3
 select using_start, using_end
 from ride
-where using_start BETWEEN datetime('now', '-6 days') AND datetime('now', 'localtime');
+where using_start between datetime('now', '-6 days') and datetime('now', 'localtime');
 
 -- 5
 select using_start, using_end, coordinate_a, coordinate_b
@@ -32,13 +32,14 @@ where (cast(strftime('%H', using_start) as integer) >= 7 and (cast(strftime('%H'
    or (cast(strftime('%H', using_start) as integer) >= 17 and (cast(strftime('%H', using_start) as integer) <= 19));
 
 -- 7
-select car.plate
+select plate, count(using_start)
+from ride
+where using_start BETWEEN datetime('now', '-91 days') AND datetime('now', 'localtime')
+group by plate
+union
+select plate, 0
 from car
-       join ride on car.plate = ride.plate
-where (cast(strftime('%H', using_start) as integer) >= 7 and (cast(strftime('%H', using_start) as integer) <= 10))
-   or (cast(strftime('%H', using_start) as integer) >= 12 and (cast(strftime('%H', using_start) as integer) <= 14))
-   or (cast(strftime('%H', using_start) as integer) >= 17 and (cast(strftime('%H', using_start) as integer) <= 19))
-order by car.plate;
+order by count(using_start);
 
 -- 9
 select amount, part_ID, WID, provided_date

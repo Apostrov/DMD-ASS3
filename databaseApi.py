@@ -86,6 +86,11 @@ class CarSharingDataBase:
         self.cursor.execute('select %s from %s' % (column, table))
         return self.cursor.fetchall()
 
+    # !!! Not secured from sql injection
+    def delete_by_condition(self, table, delete_condition):
+        print('delete from %s where %s' % (table, delete_condition))
+        self.execute_query('delete from %s where %s' % (table, delete_condition))
+
     # Location
     def add_location(self, GPS, city, street, zip_code):
         vals = (GPS, city, street, zip_code)
@@ -393,7 +398,7 @@ class CarSharingDataBase:
         self.execute_query('''
         select strftime('%H', using_start), strftime('%H', using_end) 
         from ride
-        where using_start BETWEEN datetime('now', '-6 days') AND datetime('now', 'localtime');
+        where using_start between datetime('now', '-6 days') and datetime('now', 'localtime');
         ''')
         car_times = self.cursor.fetchall()
         cars_duringtime = [0, 0, 0]  # morning (7AM - 10 AM), afternoon (12AM - 2PM) and evening (5PM - 7PM)
@@ -470,6 +475,33 @@ class CarSharingDataBase:
                 sorted(afternoon_travelpoints, key=afternoon_travelpoints.get, reverse=True)[:3],
                 sorted(evening_pickups, key=evening_pickups.get, reverse=True)[:3],
                 sorted(evening_travelpoints, key=evening_travelpoints.get, reverse=True)[:3]]
+
+    # Seventh Query
+    def delete_car_ten_percentage(self):
+        self.execute_query('''
+        select plate, count(using_start)
+        from ride
+        where using_start between datetime('now', '-91 days') and datetime('now', 'localtime')
+        group by plate
+        union
+        select plate, 0
+        from car
+        order by count(using_start);
+        ''')
+
+        plate_counts = self.cursor.fetchall()
+        count_dict = {}
+        for pc in plate_counts:
+            if pc not in count_dict:
+                count_dict[pc[0]] = 0
+            count_dict[pc[0]] += pc[1]
+        count = 0
+        max_count = round(0.1 * len(count_dict))
+        for plate in sorted(count_dict, key=count_dict.get):
+            self.delete_by_condition('car', "plate = '" + plate + "'")
+            count += 1
+            if count == max_count:
+                return
 
     # Ninth Query
     def often_require_car_part(self):
@@ -590,4 +622,5 @@ if __name__ == '__main__':
     print(db.popular_travel())
     print(db.often_require_car_part())
     print(db.car_with_expensive_service())
+    db.delete_car_ten_percentage()
     db.close_db()
