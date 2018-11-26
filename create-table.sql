@@ -10,7 +10,7 @@ create table if not exists location (
 create table if not exists charging_station (
   UID integer primary key autoincrement,
   available_sockets integer,
-  price varchar (50),
+  price integer,
   time_of_charging integer,
   GPS varchar (100) not null,
 
@@ -96,6 +96,7 @@ create table if not exists car (
   charge_amount integer,
   GPS varchar (100),
   color varchar(40),
+  purchase_date date,
 
   primary key (plate),
   foreign key (car_type) references car_type(car_type)
@@ -116,6 +117,7 @@ create table if not exists ride (
 create table if not exists charge (
   plate varchar(15) not null,
   UID integer not null,
+  cost integer,
   charged_datetime datetime,
 
   foreign key (plate) references car (plate),
@@ -125,6 +127,7 @@ create table if not exists charge (
 create table if not exists repair (
   plate varchar(15) not null,
   WID integer not null,
+  cost integer,
   repair_date date,
 
   foreign key (plate) references car (plate),
