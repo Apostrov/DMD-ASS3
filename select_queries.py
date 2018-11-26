@@ -211,6 +211,7 @@ def often_require_car_part(db):
     ''')
     provided_car_parts = db.get_answer()
     wid_car_part = {}
+    # parsing =
     for pcp in provided_car_parts:
         partID = pcp[0]
         wid = pcp[1]
@@ -229,6 +230,7 @@ def often_require_car_part(db):
             wid_car_part[wid][partID]["first_add_data"] = provide_data
 
     require_car_part = {}
+    # computing
     for wid in wid_car_part.keys():
         if wid not in require_car_part:
             require_car_part[wid] = {}
@@ -248,8 +250,16 @@ def often_require_car_part(db):
     from car_part
     where part_ID in ''' + str(tuple(vals)))
 
-    part_info = db.cursor.fetchall()
-    return require_car_part, part_info
+    part_info_raw = db.get_answer()
+    # parse part_info
+    part_info = {}
+    for part in part_info_raw:
+        part_info[part[0]] = part[1] + " for car type: " + part[2]
+    ans = ""
+    for rcp in require_car_part.keys():
+        ans += "%s workshop most often requires %s (about %s every week on average)\n" % (
+            rcp, part_info[require_car_part[rcp][0]], round(require_car_part[rcp][1]))
+    return ans
 
 
 # Tenth Query
@@ -316,16 +326,37 @@ def sample_start(db):
 
 if __name__ == '__main__':
     db = CarSharingDataBase()
+    db.add_random_data(40)
     # sample_start(db)
     # Query
+    print("First Query")
     print(find_car(db, "Red", "AN", "Day7", "2018-11-20"))
+
+    print("Second Query")
     print(number_sockets_occupied(db, 1, "2018-11-20"))
+
+    print("Third Query")
     print(week_statistic(db))
-    print(ride_statistic(db, '2018-11-20'))
-    print(popular_travel(db))
-    print(often_require_car_part(db))
-    print(car_with_expensive_service(db))
-    delete_car_ten_percentage(db)
-    print(charge_amount(db, '2017-10-01'))
+
+    print("Fourth Query")
     print(twice_charge(db, "Day7"))
+
+    print("Fifth Query")
+    print(ride_statistic(db, '2018-11-20'))
+
+    print("Sixth Query")
+    print(popular_travel(db))
+
+    print("Seventh Query")
+    #delete_car_ten_percentage(db)
+
+    print("Eighth Query")
+    print(charge_amount(db, '2017-10-01'))
+
+    print("Ninth Query")
+    print(often_require_car_part(db))
+
+    print("Tenth Query")
+    print(car_with_expensive_service(db))
+
     db.close_db()
