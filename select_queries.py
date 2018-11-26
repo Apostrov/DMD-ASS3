@@ -288,13 +288,14 @@ def sample_start(db):
     db.add_provide_car_parts(120, 1, 1, 1, "2018-11-19")
     db.add_car("AN123", "B", False, 100, "gps1", "Red", "2017-10-10")
     db.add_ride("AN123", "Day7", "gps1", "gps", "2018-11-20 07:00:00", "2018-11-20 08:30:00")
-    db.add_charge("AN123", 1, 6, "2018-11-20 09:00:00")
+    db.add_charge("AN123", 1, 6, "2018-11-20 08:00:00")
+    db.add_charge("AN123", 1, 6, "2018-11-20 08:20:00")
     db.add_repair("AN123", 1, 20, "2018-10-31")
 
 
 if __name__ == '__main__':
     db = CarSharingDataBase()
-    # sample_start(db)
+    sample_start(db)
     # Query
     print(find_car(db, "Red", "AN", "Day7", "2018-11-20"))
     print(number_sockets_occupied(db, 1, "2018-11-20"))

@@ -83,7 +83,6 @@ class CarSharingDataBase:
 
     # !!! Not secured from sql injection
     def delete_by_condition(self, table, delete_condition):
-        print('delete from %s where %s' % (table, delete_condition))
         self.execute_query('delete from %s where %s' % (table, delete_condition))
 
     # Location
@@ -340,6 +339,7 @@ class CarSharingDataBase:
 
     # May take a long time
     def add_random_data(self, amount):
+        print("Wait, please. Generating %s entities" % amount)
         for i in range(amount):
             self.add_random_location()
             self.add_random_charging_station()
@@ -355,3 +355,5 @@ class CarSharingDataBase:
             self.add_random_ride()
             self.add_random_charge()
             self.add_random_repair()
+            print("Generate %s entities" % (i + 1))
+        print("Done. Thanks for waiting")
