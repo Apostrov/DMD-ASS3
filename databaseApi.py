@@ -107,7 +107,7 @@ class CarSharingDataBase:
             return
 
         available_sockets = generate_random_int(2)
-        price = generate_random_string(3)
+        price = generate_random_int(1)
         time_of_charging = generate_random_int(2)
         GPS = random.choice(all_gps)[0]
         self.add_charging_station(available_sockets, price, time_of_charging, GPS)
@@ -293,9 +293,9 @@ class CarSharingDataBase:
         self.add_ride(plate, username, coordinate_a, coordinate_b, using_start, using_end)
 
     # Charge
-    def add_charge(self, plate, UID, charged_datetime):
-        vals = (plate, UID, charged_datetime)
-        self.execute_query("insert into charge values (?, ?, ?)", vals)
+    def add_charge(self, plate, UID, cost, charged_datetime):
+        vals = (plate, UID, cost, charged_datetime)
+        self.execute_query("insert into charge values (?, ?, ?, ?)", vals)
 
     def add_random_charge(self):
         all_plate = self.select_table_column("car", "plate")
@@ -308,14 +308,15 @@ class CarSharingDataBase:
 
         plate = random.choice(all_plate)[0]
         UID = random.choice(all_uid)[0]
+        cost = generate_random_int(1)
         charged_datetime = generate_random_date() + " " + generate_random_time()
 
-        self.add_charge(plate, UID, charged_datetime)
+        self.add_charge(plate, UID, cost, charged_datetime)
 
     # Repair
-    def add_repair(self, plate, WID, repair_date):
-        vals = (plate, WID, repair_date)
-        self.execute_query("insert into repair values (?, ?, ?)", vals)
+    def add_repair(self, plate, WID, cost, repair_date):
+        vals = (plate, WID, cost, repair_date)
+        self.execute_query("insert into repair values (?, ?, ?, ?)", vals)
 
     def add_random_repair(self):
         all_plate = self.select_table_column("car", "plate")
@@ -328,9 +329,10 @@ class CarSharingDataBase:
 
         plate = random.choice(all_plate)[0]
         WID = random.choice(all_wid)[0]
+        cost = generate_random_int(2)
         repair_date = generate_random_date()
 
-        self.add_repair(plate, WID, repair_date)
+        self.add_repair(plate, WID, cost, repair_date)
 
     # May take a long time
     def add_random_data(self, amount):
@@ -520,13 +522,13 @@ def sample_start():
     db.add_provide_car_parts(120, 1, 1, 1, "2018-11-19")
     db.add_car("AN123", "B", False, 100, "gps1", "Red")
     db.add_ride("AN123", "Day7", "gps1", "gps", "2018-11-20 07:00:00", "2018-11-20 08:30:00")
-    db.add_charge("AN123", 1, "2018-11-20 09:00:00")
-    db.add_repair("AN123", 1, "2018-10-31")
+    db.add_charge("AN123", 1, 6, "2018-11-20 09:00:00")
+    db.add_repair("AN123", 1, 20, "2018-10-31")
 
 
 if __name__ == '__main__':
     db = CarSharingDataBase()
-    # sample_start()
+    sample_start()
     # Query
     print(db.find_car("Red", "AN", "Day7", "2018-11-20"))
     print(db.number_sockets_occupied(1, "2018-11-20"))

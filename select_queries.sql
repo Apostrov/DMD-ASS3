@@ -23,10 +23,10 @@ where (cast(strftime('%H', using_start) as integer)>= 7 and (cast(strftime('%H',
    or (cast(strftime('%H', using_start) as integer)>= 17 and (cast(strftime('%H', using_start) as integer) <= 19));
 
 -- 9
-select amount, part_ID, WID, provided_date from provide_car_parts
+select amount, part_ID, WID, provided_date from provide_car_parts;
 
 -- 10
 select charge.cost as ccost, repair.cost as rcost, car_type, charged_datetime, repair_date
 from charge
-join repair on charge.CID == repair.CID
-join car on charge.CID == car.CID
+join repair on charge.plate == repair.plate
+join car on charge.plate == car.plate;
