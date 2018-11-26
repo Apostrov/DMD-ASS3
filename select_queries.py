@@ -1,4 +1,5 @@
 import datetime
+from math import radians, cos, sin, asin, sqrt
 from database_api import CarSharingDataBase
 
 
@@ -7,6 +8,20 @@ def increment_value_dict(key, dictionary, value):
         dictionary[key] = 0
     dictionary[key] += value
     return dictionary
+
+
+def compute_distance(point1, point2):
+    lat1, lng1 = point1[0], point1[1]
+    lat2, lng2 = point2[0], point2[1]
+
+    # convert all latitudes/longitudes from decimal degrees to radians
+    lat1, lng1, lat2, lng2 = map(radians, (lat1, lng1, lat2, lng2))
+
+    # calculate haversine
+    lat = lat2 - lat1
+    lng = lng2 - lng1
+    d = sin(lat * 0.5) ** 2 + cos(lat1) * cos(lat2) * sin(lng * 0.5) ** 2
+    return 2 * 6371 * asin(sqrt(d))
 
 
 # First Query
@@ -91,14 +106,19 @@ def ride_statistic(db, day):
     ''', vals)
     times_and_coordinates = db.get_answer()
     durations = []
+    distances = []
     for tandc in times_and_coordinates:
         time_start = datetime.datetime.strptime(tandc[0], '%Y-%m-%d %H:%M:%S')
         time_end = datetime.datetime.strptime(tandc[1], '%Y-%m-%d %H:%M:%S')
         durations.append(time_end - time_start)
+        point1 = [int(x.strip()) for x in tandc[2].split(',')]
+        point2 = [int(x.strip()) for x in tandc[3].split(',')]
+        distances.append(compute_distance(point1, point2))
     if len(durations) == 0:
         return 0
     average_time = sum([x.seconds for x in durations]) / len(durations)
-    return average_time
+    average_distance = sum(distances) / len(distances)
+    return average_time, average_distance
 
 
 # Sixth Query
@@ -277,18 +297,18 @@ def sample_start(db):
     db.recreate_all_tables()
     db.add_random_data(20)
 
-    db.add_location("gps", "ksz", "strt", 111)
-    db.add_charging_station(5, "10$", 10, "gps")
+    db.add_location("50, 50", "ksz", "strt", 111)
+    db.add_charging_station(5, "10$", 10, "50, 50")
     db.add_plug(1, "shp", 10)
     db.add_customer("Day7", "7", "77", "777", "7777")
     db.add_car_type("B")
     db.add_car_part("part", "B", "spec")
-    db.add_workshop("06:00:00", "20:00:00", "gps")
+    db.add_workshop("06:00:00", "20:00:00", "50, 50")
     db.add_workshop_car_part(100, 1, 2)
-    db.add_provider("phone_numb", "gps")
+    db.add_provider("phone_numb", "50, 50")
     db.add_provide_car_parts(120, 1, 1, 1, "2018-11-19")
-    db.add_car("AN123", "B", False, 100, "41.74761564285939, 97.39815428536774", "Red", "2017-10-10")
-    db.add_ride("AN123", "Day7", "gps1", "gps", "2018-11-20 07:00:00", "2018-11-20 08:30:00")
+    db.add_car("AN123", "B", False, 100, "41, 97", "Red", "2017-10-10")
+    db.add_ride("AN123", "Day7", "40, 100", "60, 30", "2018-11-20 07:00:00", "2018-11-20 08:30:00")
     db.add_charge("AN123", 1, 6, "2018-11-20 08:00:00")
     db.add_charge("AN123", 1, 6, "2018-11-20 08:20:00")
     db.add_repair("AN123", 1, 20, "2018-10-31")
@@ -296,7 +316,7 @@ def sample_start(db):
 
 if __name__ == '__main__':
     db = CarSharingDataBase()
-    sample_start(db)
+    # sample_start(db)
     # Query
     print(find_car(db, "Red", "AN", "Day7", "2018-11-20"))
     print(number_sockets_occupied(db, 1, "2018-11-20"))
