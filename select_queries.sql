@@ -20,10 +20,11 @@ from ride
 where using_start between datetime('now', '-6 days') and datetime('now', 'localtime');
 
 -- 4
-select charged_datetime from charge
-join ride on charge.plate = ride.plate
-where (cast(((julianday('now') - julianday(charged_datetime))/(365/12)) as integer) < 1) and (username = 'Day7') -- example
-order by charged_datetime;
+select count(charged_datetime)
+from ride
+       natural join charge
+where username = 'Day7' -- example
+  and charged_datetime between using_start and using_end;
 
 -- 5
 select using_start, using_end, coordinate_a, coordinate_b

@@ -417,7 +417,18 @@ class CarSharingDataBase:
 
     # Fourth Query
     def twice_charge(self, username):
-        pass
+        vals = (username,)
+        self.execute_query('''
+        select charged_datetime, count(charged_datetime)
+        from ride
+              natural join charge
+        where username = ?
+            and charged_datetime between using_start and using_end;
+        ''', vals)
+        charge_count = self.cursor.fetchall()
+        if int(charge_count[0][1]) >= 2:
+            return charge_count[0][0]
+        return 0
 
     # Fifth Query
     def ride_statistic(self, day):
@@ -638,4 +649,5 @@ if __name__ == '__main__':
     print(db.car_with_expensive_service())
     # db.delete_car_ten_percentage()
     print(db.charge_amount('2017.10.01'))
+    print(db.twice_charge("M4MPBz3QpT7dNqFIKGYTWVmfVcXgTcFYXcgFUUqJYfVTX2j2Wf"))
     db.close_db()
