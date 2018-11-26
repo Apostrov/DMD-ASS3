@@ -22,10 +22,13 @@ def generate_random_time():
 
 
 def generate_random_date():
-    year = "2018"
+    year = "2017"
     month = ''.join(random.choice('01')) + ''.join(random.choice('12'))
     day = ''.join(random.choice('012')) + generate_random_int(1)
-
+    if day == '00':
+        day = '01'
+    if month == '00':
+        month = '01'
     return year + "-" + month + "-" + day
 
 
@@ -250,9 +253,9 @@ class CarSharingDataBase:
         self.add_car_type(car_type)
 
     # Car
-    def add_car(self, plate, car_type, broken, charge_amount, GPS, color):
-        vals = (plate, car_type, broken, charge_amount, GPS, color)
-        self.execute_query("insert into car values (?, ?, ?, ?, ?, ?)", vals)
+    def add_car(self, plate, car_type, broken, charge_amount, GPS, color, purchase_date):
+        vals = (plate, car_type, broken, charge_amount, GPS, color, purchase_date)
+        self.execute_query("insert into car values (?, ?, ?, ?, ?, ?, ?)", vals)
 
     def add_random_car(self):
         all_car_type = self.select_table_column("car_type", "car_type")
@@ -265,8 +268,9 @@ class CarSharingDataBase:
         charge_amount = generate_random_int(2)
         GPS = generate_random_string(50)
         color = generate_random_string(10)
+        purchase_date = '2017-01-01'
 
-        self.add_car(plate, car_type, broken, charge_amount, GPS, color)
+        self.add_car(plate, car_type, broken, charge_amount, GPS, color, purchase_date)
 
     # Ride
     def add_ride(self, plate, username, coordinate_a, coordinate_b, using_start, using_end):
@@ -288,7 +292,7 @@ class CarSharingDataBase:
         username = random.choice(all_username)[0]
         date = generate_random_date()
         using_end = date + " " + generate_random_time()
-        using_start = using_end[:-7] + "0:00:00"
+        using_start = using_end[:-6] + ":00:00"
 
         self.add_ride(plate, username, coordinate_a, coordinate_b, using_start, using_end)
 
@@ -357,9 +361,13 @@ class CarSharingDataBase:
     def find_car(self, color, plate, username, day):
         vals = (color, plate + "%", username, day)
         self.execute_query('''
-        select car.plate from car
-        join ride on car.plate = ride.plate
-        where color = ? and car.plate like ? and username = ? and using_start >= ?
+        select car.plate 
+        from car
+            natural join ride
+        where color = ? 
+            and car.plate like ? 
+            and username = ? 
+            and using_start >= ?
         ''', vals)
         plates = [x[0] for x in self.cursor.fetchall()]
         return plates
@@ -368,8 +376,9 @@ class CarSharingDataBase:
     def number_sockets_occupied(self, uid, date):
         vals = (uid, date)
         self.execute_query('''
-        select strftime('%H', charged_datetime) from charge
-        join charging_station on charge.UID == charging_station.UID
+        select strftime('%H', charged_datetime) 
+        from charge
+            natural join charging_station
         where charge.UID = ? and date(charged_datetime) = ?
         ''', vals)
         hours = [int(x[0]) for x in self.cursor.fetchall()]
@@ -382,7 +391,8 @@ class CarSharingDataBase:
     # Third Query
     def week_statistic(self):
         self.execute_query('''
-        select strftime('%H', using_start), strftime('%H', using_end) from ride
+        select strftime('%H', using_start), strftime('%H', using_end) 
+        from ride
         where using_start BETWEEN datetime('now', '-6 days') AND datetime('now', 'localtime');
         ''')
         car_times = self.cursor.fetchall()
@@ -408,7 +418,8 @@ class CarSharingDataBase:
     def ride_statistic(self, day):
         vals = (day,)
         self.execute_query('''
-        select using_start, using_end, coordinate_a, coordinate_b from ride
+        select using_start, using_end, coordinate_a, coordinate_b 
+        from ride
         where date(using_start) = ?
         ''', vals)
         times_and_coordinates = self.cursor.fetchall()
@@ -425,10 +436,11 @@ class CarSharingDataBase:
     # Sixth Query
     def popular_travel(self):
         self.execute_query('''
-        select strftime('%H', using_start), coordinate_a, coordinate_b from ride
-        where (cast(strftime('%H', using_start) as integer)>= 7 and (cast(strftime('%H', using_start) as integer)<= 10))
-        or (cast(strftime('%H', using_start) as integer)>= 12 and (cast(strftime('%H', using_start) as integer) <= 14))
-        or (cast(strftime('%H', using_start) as integer)>= 17 and (cast(strftime('%H', using_start) as integer) <= 19))
+        select strftime('%H', using_start), coordinate_a, coordinate_b
+        from ride
+        where (cast(strftime('%H', using_start) as integer) >= 7 and (cast(strftime('%H', using_start) as integer) <= 10))
+            or (cast(strftime('%H', using_start) as integer) >= 12 and (cast(strftime('%H', using_start) as integer) <= 14))
+            or (cast(strftime('%H', using_start) as integer) >= 17 and (cast(strftime('%H', using_start) as integer) <= 19))
         ''')
 
         time_and_coordinates = self.cursor.fetchall()
@@ -462,7 +474,8 @@ class CarSharingDataBase:
     # Ninth Query
     def often_require_car_part(self):
         self.execute_query('''
-        select part_ID, WID, amount, provided_date from provide_car_parts
+        select part_ID, WID, amount, provided_date 
+        from provide_car_parts
         ''')
         provided_car_parts = self.cursor.fetchall()
         wid_car_part = {}
@@ -499,16 +512,56 @@ class CarSharingDataBase:
 
         vals = [part[0] for part in require_car_part.values()]
         self.execute_query('''
-        select part_ID, part_type, car_type from car_part
+        select part_ID, part_type, car_type 
+        from car_part
         where part_ID in ''' + str(tuple(vals)))
-        
+
         part_info = self.cursor.fetchall()
         return require_car_part, part_info
+
+    # Tenth Query
+    def car_with_expensive_service(self):
+        self.execute_query('''
+        select car_type, cost, purchase_date 
+        from repair
+            natural join (select plate, car_type, purchase_date from car);
+        ''')
+
+        repair_costs = self.cursor.fetchall()
+        waste_money = {}
+        for rc in repair_costs:
+            if rc[0] not in waste_money:
+                waste_money[rc[0]] = {'cost': 0, 'number': 0}
+            day_passed = (datetime.datetime.now() - datetime.datetime.strptime(rc[2], '%Y-%m-%d')).days
+            waste_money[rc[0]]['cost'] += rc[1] / day_passed
+            waste_money[rc[0]]['number'] += 1
+
+        self.execute_query('''
+        select car_type, cost, purchase_date 
+        from charge
+            natural join (select plate, car_type, purchase_date from car);
+        ''')
+
+        charge_costs = self.cursor.fetchall()
+        for rc in repair_costs:
+            if rc[0] not in waste_money:
+                waste_money[rc[0]] = {'cost': 0, 'number': 0}
+            day_passed = (datetime.datetime.now() - datetime.datetime.strptime(rc[2], '%Y-%m-%d')).days
+            waste_money[rc[0]]['cost'] += rc[1] / day_passed
+            waste_money[rc[0]]['number'] += 1
+
+        car_type_spender = {'name': '', 'amount': 0}
+        for name, wasted in waste_money.items():
+            amount = wasted['cost'] / wasted['number']
+            if car_type_spender['amount'] < amount:
+                car_type_spender['name'] = name
+                car_type_spender['amount'] = amount
+        return car_type_spender
 
 
 def sample_start():
     db.recreate_all_tables()
-    db.add_random_data(4)
+    db.add_random_data(8)
 
     db.add_location("gps", "ksz", "strt", 111)
     db.add_charging_station(5, "10$", 10, "gps")
@@ -520,7 +573,7 @@ def sample_start():
     db.add_workshop_car_part(100, 1, 2)
     db.add_provider("phone_numb", "gps")
     db.add_provide_car_parts(120, 1, 1, 1, "2018-11-19")
-    db.add_car("AN123", "B", False, 100, "gps1", "Red")
+    db.add_car("AN123", "B", False, 100, "gps1", "Red", "2017-10-10")
     db.add_ride("AN123", "Day7", "gps1", "gps", "2018-11-20 07:00:00", "2018-11-20 08:30:00")
     db.add_charge("AN123", 1, 6, "2018-11-20 09:00:00")
     db.add_repair("AN123", 1, 20, "2018-10-31")
@@ -528,7 +581,7 @@ def sample_start():
 
 if __name__ == '__main__':
     db = CarSharingDataBase()
-    sample_start()
+    # sample_start()
     # Query
     print(db.find_car("Red", "AN", "Day7", "2018-11-20"))
     print(db.number_sockets_occupied(1, "2018-11-20"))
@@ -536,4 +589,5 @@ if __name__ == '__main__':
     print(db.ride_statistic('2018-11-20'))
     print(db.popular_travel())
     print(db.often_require_car_part())
+    print(db.car_with_expensive_service())
     db.close_db()

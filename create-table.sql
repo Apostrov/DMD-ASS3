@@ -96,6 +96,7 @@ create table if not exists car (
   charge_amount integer,
   GPS varchar (100),
   color varchar(40),
+  purchase_date date,
 
   primary key (plate),
   foreign key (car_type) references car_type(car_type)
