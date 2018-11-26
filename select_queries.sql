@@ -34,7 +34,7 @@ where (cast(strftime('%H', using_start) as integer) >= 7 and (cast(strftime('%H'
 -- 7
 select plate, count(using_start)
 from ride
-where using_start BETWEEN datetime('now', '-91 days') AND datetime('now', 'localtime')
+where using_start between datetime('now', '-91 days') and datetime('now', 'localtime')
 group by plate
 union
 select plate, 0
@@ -42,12 +42,11 @@ from car
 order by count(using_start);
 
 -- 8
-select ride.username
+select username, count(charged_datetime)
 from ride
-       join charge on ride.plate = charge.plate
-where ((cast(((julianday('now') - julianday(ride.using_start)) / (365 / 12)) as integer) < 1)
-  and (cast(strftime('%d', using_start) as integer) = cast(strftime('%d', charged_datetime) as integer)))
-order by ride.username;
+       natural join charge
+where date(using_start) >= '2017.10.01' -- example
+group by username;
 
 -- 9
 select amount, part_ID, WID, provided_date

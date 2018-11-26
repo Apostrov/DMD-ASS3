@@ -503,6 +503,20 @@ class CarSharingDataBase:
             if count == max_count:
                 return
 
+    # Eighth Query
+    def charge_amount(self, starting_date):
+        vals = (starting_date,)
+        self.execute_query('''
+        select username, count(charged_datetime)
+        from ride
+              natural join charge
+        where date(using_start) >= ? -- example
+        group by username;
+        ''', vals)
+
+        charges = self.cursor.fetchall()
+        return charges
+
     # Ninth Query
     def often_require_car_part(self):
         self.execute_query('''
@@ -622,5 +636,6 @@ if __name__ == '__main__':
     print(db.popular_travel())
     print(db.often_require_car_part())
     print(db.car_with_expensive_service())
-    db.delete_car_ten_percentage()
+    # db.delete_car_ten_percentage()
+    print(db.charge_amount('2017.10.01'))
     db.close_db()
